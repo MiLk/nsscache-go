@@ -1,11 +1,10 @@
 package cache
 
 import (
-	"os"
-
 	"bytes"
-
 	"fmt"
+	"io"
+	"os"
 	"path"
 
 	"github.com/youtube/vitess/go/ioutil2"
@@ -60,6 +59,14 @@ func (c *Cache) buffer() (*bytes.Buffer, error) {
 		}
 	}
 	return &b, nil
+}
+
+func (c *Cache) WriteTo(w io.Writer) (int64, error) {
+	b, err := c.buffer()
+	if err != nil {
+		return 0, err
+	}
+	return io.Copy(w, b)
 }
 
 func (c *Cache) WriteFile() error {
