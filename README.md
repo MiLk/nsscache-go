@@ -8,6 +8,16 @@ Implementation of [nsscache](https://github.com/google/nsscache) in Go.
 The main goal of this library is too allow to write easily new program which can populate the nsscache files
 from not yet supported sources or to use your custom logic to generate those cache files.
 
+## Running the test
+
+To run the test against [libnss-cache](https://github.com/google/libnss-cache),
+you need to have docker installer, and build the test image.
+
+```bash
+cd test/docker
+docker build -t nsscache-go:latest .
+```
+
 ## See
 
 * [nsscache](https://github.com/google/nsscache)
