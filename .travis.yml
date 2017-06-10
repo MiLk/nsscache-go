@@ -5,7 +5,7 @@ go:
 services:
   - docker
 before_install:
-  - pushd test/docker && docker build -t nsscache-go:latest . && popd
+  - pushd docker && docker build -t nsscache-go:latest . && popd
   - go get github.com/mattn/goveralls
 script:
   - $GOPATH/bin/goveralls -service=travis-ci

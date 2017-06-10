@@ -14,7 +14,7 @@ To run the test against [libnss-cache](https://github.com/google/libnss-cache),
 you need to have docker installer, and build the test image.
 
 ```bash
-cd test/docker
+cd docker
 docker build -t nsscache-go:latest .
 ```
 

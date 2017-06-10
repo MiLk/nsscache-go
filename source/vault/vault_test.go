@@ -80,7 +80,7 @@ func TestVaultSource_FillPasswdCache(t *testing.T) {
 	s, err := NewSource(Client(client), Prefix("nsscache-test"))
 	assert.Nil(t, err)
 
-	c := cache.NewCache("passwd_vault", cache.Dir(dir))
+	c := cache.NewCache()
 	err = s.FillPasswdCache(c)
 	assert.Nil(t, err)
 
@@ -99,7 +99,7 @@ foo:x:1000:1000:Mr Foo:/home/foo:/bin/bash
 	})
 	assert.Nil(t, err)
 
-	c = cache.NewCache("passwd_vault", cache.Dir(dir))
+	c = cache.NewCache()
 	err = s.FillPasswdCache(c)
 	assert.NotNil(t, err)
 
@@ -109,7 +109,7 @@ foo:x:1000:1000:Mr Foo:/home/foo:/bin/bash
 	})
 	assert.Nil(t, err)
 
-	c = cache.NewCache("passwd_vault", cache.Dir(dir))
+	c = cache.NewCache()
 	err = s.FillPasswdCache(c)
 	assert.NotNil(t, err)
 
@@ -117,7 +117,7 @@ foo:x:1000:1000:Mr Foo:/home/foo:/bin/bash
 	s, err = NewSource(Client(client), Prefix("nsscache-empty"))
 	assert.Nil(t, err)
 
-	c = cache.NewCache("passwd_vault", cache.Dir(dir))
+	c = cache.NewCache()
 	err = s.FillPasswdCache(c)
 	assert.Nil(t, err)
 
@@ -153,7 +153,7 @@ func TestVaultSource_FillShadowCache(t *testing.T) {
 	s, err := NewSource(Client(client), Prefix("nsscache-test"))
 	assert.Nil(t, err)
 
-	c := cache.NewCache("shadow_vault", cache.Dir(dir))
+	c := cache.NewCache()
 	err = s.FillShadowCache(c)
 	assert.Nil(t, err)
 
@@ -190,7 +190,7 @@ func TestVaultSource_FillGroupCache(t *testing.T) {
 	s, err := NewSource(Client(client), Prefix("nsscache-test"))
 	assert.Nil(t, err)
 
-	c := cache.NewCache("shadow_vault", cache.Dir(dir))
+	c := cache.NewCache()
 	err = s.FillGroupCache(c)
 	assert.Nil(t, err)
 

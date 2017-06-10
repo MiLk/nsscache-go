@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/vault/api"
 
 	nsscache "github.com/milk/nsscache-go"
-	"github.com/milk/nsscache-go/cache"
 	vaultsource "github.com/milk/nsscache-go/source/vault"
 )
 
@@ -32,12 +31,13 @@ func mainE() error {
 	if err != nil {
 		return err
 	}
-	dirOption := cache.Dir(cwd)
-	cm := nsscache.NewCaches(dirOption)
+	cm := nsscache.NewCaches()
 
 	if err := cm.FillCaches(src); err != nil {
 		return err
 	}
 
-	return cm.WriteFiles()
+	return cm.WriteFiles(&nsscache.WriteOptions{
+		Directory: cwd,
+	})
 }

@@ -7,15 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewCache(t *testing.T) {
-	c := NewCache("foo", Dir("/tmp/test/foo"), Extension("bar"))
-	assert.Equal(t, "/tmp/test/foo/foo.bar", c.filename())
-	c = NewCache("bar", Dir("/tmp/test/foo/"), Extension("foo"))
-	assert.Equal(t, "/tmp/test/foo/bar.foo", c.filename())
-}
-
 func TestCache_Add(t *testing.T) {
-	c := NewCache("cache")
+	c := NewCache()
 	c.Add(&PasswdEntry{
 		Name:   "foo",
 		Passwd: "x",

@@ -2,6 +2,11 @@
 package nsscache
 
 import (
+	"fmt"
+	"path"
+
+	"os"
+
 	"github.com/milk/nsscache-go/cache"
 	"github.com/milk/nsscache-go/source"
 )
@@ -10,35 +15,71 @@ import (
 type CacheMap map[string]*cache.Cache
 
 // NewCaches creates cache structs for passwd, group and shadow
-func NewCaches(opts ...cache.Option) CacheMap {
+func NewCaches() CacheMap {
 	m := CacheMap{}
-	m["passwd"] = cache.NewCache("passwd", opts...)
-	m["group"] = cache.NewCache("group", opts...)
-	shadowOpt := append(opts, cache.Mode(0000))
-	m["shadow"] = cache.NewCache("shadow", shadowOpt...)
+	for _, name := range []string{"passwd", "shadow", "group"} {
+		m[name] = cache.NewCache()
+	}
 	return m
 }
 
 // FillCaches uses the provided source to fill the caches of the CacheMap struct
 func (cm *CacheMap) FillCaches(src source.Source) error {
-	if err := src.FillPasswdCache((*cm)["passwd"]); err != nil {
-		return err
+	if c, ok := (*cm)["passwd"]; ok {
+		if err := src.FillPasswdCache(c); err != nil {
+			return err
+		}
 	}
 
-	if err := src.FillShadowCache((*cm)["shadow"]); err != nil {
-		return err
+	if c, ok := (*cm)["shadow"]; ok {
+		if err := src.FillShadowCache(c); err != nil {
+			return err
+		}
 	}
 
-	return src.FillGroupCache((*cm)["group"])
+	if c, ok := (*cm)["group"]; ok {
+		if err := src.FillGroupCache(c); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+type WriteOptions struct {
+	Directory string
+	Extension string
+}
+
+func defaultWriteOptions() WriteOptions {
+	return WriteOptions{
+		Directory: "/etc",
+		Extension: "cache",
+	}
 }
 
 // WriteFiles write the content of the cache structs into files that libnss-cache can read
-func (cm *CacheMap) WriteFiles() error {
-	if err := (*cm)["passwd"].WriteFile(); err != nil {
-		return err
+func (cm *CacheMap) WriteFiles(options *WriteOptions) error {
+	wo := defaultWriteOptions()
+	if options != nil {
+		if options.Directory != "" {
+			wo.Directory = options.Directory
+		}
+		if options.Extension != "" {
+			wo.Extension = options.Extension
+		}
 	}
-	if err := (*cm)["shadow"].WriteFile(); err != nil {
-		return err
+
+	for _, name := range []string{"passwd", "shadow", "group"} {
+		filepath := path.Join(wo.Directory, fmt.Sprintf("%s.%s", name, wo.Extension))
+		mode := 0644
+		if name == "shadow" {
+			mode = 0000
+		}
+		if err := WriteAtomic(filepath, (*cm)[name], os.FileMode(mode)); err != nil {
+			return err
+		}
 	}
-	return (*cm)["group"].WriteFile()
+
+	return nil
 }
