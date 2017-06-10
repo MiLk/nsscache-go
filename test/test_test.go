@@ -85,8 +85,9 @@ func TestLibNsscache(t *testing.T) {
 	assert.Equal(t, "foo:x:1000:1000:Mr Foo:/home/foo:/bin/bash\n", string(res))
 
 	res, err = Getent(dir, "shadow", "foo")
+	lstchg := int32(time.Now().Sub(time.Unix(0, 0)).Hours() / 24)
 	assert.Nil(t, err)
-	assert.Equal(t, "foo:!!:17321::::::\n", string(res))
+	assert.Equal(t, fmt.Sprintf("foo:!!:%d::::::\n", lstchg), string(res))
 
 	res, err = Getent(dir, "group", "foo")
 	assert.Nil(t, err)

@@ -35,6 +35,11 @@ func Extension(e string) Option {
 	return func(c *Cache) { c.ext = e }
 }
 
+// Permissions is an option allowing to change the mode of the cache file
+func Mode(mode os.FileMode) Option {
+	return func(c *Cache) { c.perm = mode }
+}
+
 type Cache struct {
 	dir     string      // Directory component of the path to the cache file
 	name    string      // File name component of the path to the cache file
