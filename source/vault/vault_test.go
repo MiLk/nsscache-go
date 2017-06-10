@@ -49,6 +49,11 @@ func TestNewSource(t *testing.T) {
 	s, err := NewSource()
 	assert.Nil(t, err)
 	assert.Equal(t, "https://127.0.0.1:8200", s.client.Address())
+
+	os.Setenv("VAULT_SKIP_VERIFY", "azerty")
+	_, err = NewSource()
+	assert.NotNil(t, err)
+	os.Unsetenv("VAULT_SKIP_VERIFY")
 }
 
 func TestVaultSource_FillPasswdCache(t *testing.T) {
