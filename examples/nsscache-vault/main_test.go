@@ -3,9 +3,8 @@ package main
 import (
 	"net"
 	"os"
-	"testing"
-
 	"path/filepath"
+	"testing"
 
 	"github.com/hashicorp/vault/http"
 	"github.com/hashicorp/vault/vault"

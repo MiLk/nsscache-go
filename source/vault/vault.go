@@ -1,3 +1,4 @@
+// vault is an implementation of a source using Hashicorp Vault to store the data
 package vault
 
 import (

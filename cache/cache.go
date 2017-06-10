@@ -1,3 +1,4 @@
+// cache contains the struct to manipulate the cache data in memory before writing to the disk
 package cache
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/youtube/vitess/go/ioutil2"
 )
 
+// NewCache creates a new struct to manage a cache to be used by libnss-cache
 func NewCache(name string, opts ...Option) *Cache {
 	c := Cache{
 		dir:  "/etc",
@@ -48,6 +50,7 @@ type Cache struct {
 	entries []Entry     // Entries contained in the cache
 }
 
+// Add adds a new entry to the cache
 func (c *Cache) Add(e Entry) {
 	c.entries = append(c.entries, e)
 }
@@ -66,6 +69,7 @@ func (c *Cache) buffer() (*bytes.Buffer, error) {
 	return &b, nil
 }
 
+// WriteTo writes the content of the cache to an io.Writer
 func (c *Cache) WriteTo(w io.Writer) (int64, error) {
 	b, err := c.buffer()
 	if err != nil {
@@ -74,6 +78,7 @@ func (c *Cache) WriteTo(w io.Writer) (int64, error) {
 	return io.Copy(w, b)
 }
 
+// WriteFile writes the content of the cache into a file in an atomic way
 func (c *Cache) WriteFile() error {
 	b, err := c.buffer()
 	if err != nil {

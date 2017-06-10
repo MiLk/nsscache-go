@@ -1,3 +1,4 @@
+// example showing how to use vault with nsscache to write files readable by libnss-cache
 package main
 
 import (
@@ -5,6 +6,7 @@ import (
 
 	"github.com/hashicorp/vault/api"
 
+	nsscache "github.com/milk/nsscache-go"
 	"github.com/milk/nsscache-go/cache"
 	vaultsource "github.com/milk/nsscache-go/source/vault"
 )
@@ -31,29 +33,11 @@ func mainE() error {
 		return err
 	}
 	dirOption := cache.Dir(cwd)
-	passwd := cache.NewCache("passwd", dirOption)
-	shadow := cache.NewCache("shadow", dirOption, cache.Mode(0000))
-	group := cache.NewCache("group", dirOption)
+	cm := nsscache.NewCaches(dirOption)
 
-	if err := src.FillPasswdCache(passwd); err != nil {
-		return err
-	}
-	if err := src.FillShadowCache(shadow); err != nil {
-		return err
-	}
-	if err := src.FillGroupCache(group); err != nil {
+	if err := cm.FillCaches(src); err != nil {
 		return err
 	}
 
-	if err := passwd.WriteFile(); err != nil {
-		return err
-	}
-	if err := shadow.WriteFile(); err != nil {
-		return err
-	}
-	if err := group.WriteFile(); err != nil {
-		return err
-	}
-
-	return nil
+	return cm.WriteFiles()
 }
