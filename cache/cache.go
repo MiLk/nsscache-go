@@ -2,7 +2,6 @@
 package cache
 
 import (
-	"bytes"
 	"io"
 )
 
@@ -20,21 +19,15 @@ func (c *Cache) Add(e Entry) {
 	c.entries = append(c.entries, e)
 }
 
-func (c *Cache) buffer() (*bytes.Buffer, error) {
-	var b bytes.Buffer
-	for _, e := range c.entries {
-		if _, err := b.WriteString(e.String()); err != nil {
-			return nil, err
-		}
-	}
-	return &b, nil
-}
-
 // WriteTo writes the content of the cache to an io.Writer
 func (c *Cache) WriteTo(w io.Writer) (int64, error) {
-	b, err := c.buffer()
-	if err != nil {
-		return 0, err
+	total := int64(0)
+	for _, e := range c.entries {
+		if n, err := e.WriteTo(w); err != nil {
+			return total + n, err
+		} else {
+			total += n
+		}
 	}
-	return io.Copy(w, b)
+	return total, nil
 }

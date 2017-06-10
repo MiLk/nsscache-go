@@ -2,11 +2,13 @@ package cache
 
 import (
 	"fmt"
+	"io"
 	"strings"
 )
 
 type Entry interface {
 	fmt.Stringer
+	io.WriterTo
 }
 
 // PasswdEntry describes an entry of the /etc/passwd file
@@ -22,12 +24,16 @@ type PasswdEntry struct {
 	Shell  string `json:"shell"`  // Shell program
 }
 
-func (e *PasswdEntry) String() string {
+func (e *PasswdEntry) format() string {
+	return "%s:%s:%d:%d:%s:%s:%s\n"
+}
+
+func (e *PasswdEntry) args() []interface{} {
 	if e.Passwd == "" {
 		e.Passwd = "x"
 	}
 
-	return fmt.Sprintf("%s:%s:%d:%d:%s:%s:%s\n",
+	return []interface{}{
 		e.Name,
 		e.Passwd,
 		e.UID,
@@ -35,7 +41,15 @@ func (e *PasswdEntry) String() string {
 		e.GECOS,
 		e.Dir,
 		e.Shell,
-	)
+	}
+}
+
+func (e *PasswdEntry) String() string {
+	return fmt.Sprintf(e.format(), e.args()...)
+}
+
+func (e *PasswdEntry) WriteTo(w io.Writer) (int64, error) {
+	return toInt64(fmt.Fprintf(w, e.format(), e.args()...))
 }
 
 // ShadowEntry describes an entry of the /etc/shadow file
@@ -53,12 +67,16 @@ type ShadowEntry struct {
 	Flag   nullUInt32 `json:"flag,omitempty"`   // Reserved
 }
 
-func (e *ShadowEntry) String() string {
+func (e *ShadowEntry) format() string {
+	return "%s:%s:%s:%s:%s:%s:%s:%s:%s\n"
+}
+
+func (e *ShadowEntry) args() []interface{} {
 	if e.Passwd == "" {
 		e.Passwd = "!!"
 	}
 
-	return fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s:%s:%s\n",
+	return []interface{}{
 		e.Name,
 		e.Passwd,
 		e.Lstchg.String(),
@@ -68,7 +86,15 @@ func (e *ShadowEntry) String() string {
 		e.Inact.String(),
 		e.Expire.String(),
 		e.Flag.String(),
-	)
+	}
+}
+
+func (e *ShadowEntry) String() string {
+	return fmt.Sprintf(e.format(), e.args()...)
+}
+
+func (e *ShadowEntry) WriteTo(w io.Writer) (int64, error) {
+	return toInt64(fmt.Fprintf(w, e.format(), e.args()...))
 }
 
 // GroupEntry describes an entry of the /etc/group file
@@ -81,15 +107,31 @@ type GroupEntry struct {
 	Mem    []string `json:"mem"`    // Member list
 }
 
-func (e *GroupEntry) String() string {
+func (e *GroupEntry) format() string {
+	return "%s:%s:%d:%s\n"
+}
+
+func (e *GroupEntry) args() []interface{} {
 	if e.Passwd == "" {
 		e.Passwd = "x"
 	}
 
-	return fmt.Sprintf("%s:%s:%d:%s\n",
+	return []interface{}{
 		e.Name,
 		e.Passwd,
 		e.GID,
 		strings.Join(e.Mem, ","),
-	)
+	}
+}
+
+func (e *GroupEntry) String() string {
+	return fmt.Sprintf(e.format(), e.args()...)
+}
+
+func (e *GroupEntry) WriteTo(w io.Writer) (int64, error) {
+	return toInt64(fmt.Fprintf(w, e.format(), e.args()...))
+}
+
+func toInt64(i int, e error) (int64, error) {
+	return int64(i), e
 }

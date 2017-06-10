@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,4 +43,18 @@ func TestCache_Add(t *testing.T) {
 	assert.EqualValues(t, 87, n)
 	expected = "foo:x:1000:1000:Mr Foo:/home/foo:/bin/bash\nbar:x:1001:1000:Mrs Bar:/home/bar:/bin/bash\n"
 	assert.Equal(t, expected, b.String())
+}
+
+type errorWriter struct{}
+
+func (w *errorWriter) Write(b []byte) (int, error) {
+	return 0, errors.New("error")
+}
+
+func TestCache_WriteTo(t *testing.T) {
+	c := NewCache()
+	c.Add(&PasswdEntry{})
+	w := &errorWriter{}
+	_, err := c.WriteTo(w)
+	assert.NotNil(t, err)
 }
