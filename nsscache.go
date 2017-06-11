@@ -14,11 +14,28 @@ import (
 // CacheMap allows you to manage the caches as a group
 type CacheMap map[string]*cache.Cache
 
+type Option struct {
+	CacheName string
+	Option    cache.Option
+}
+
 // NewCaches creates cache structs for passwd, group and shadow
-func NewCaches() CacheMap {
+func NewCaches(opts ...Option) CacheMap {
+	optionMap := map[string][]cache.Option{}
+	for _, opt := range opts {
+		if optionMap[opt.CacheName] == nil {
+			optionMap[opt.CacheName] = []cache.Option{}
+		}
+		optionMap[opt.CacheName] = append(optionMap[opt.CacheName], opt.Option)
+	}
+
 	m := CacheMap{}
 	for _, name := range []string{"passwd", "shadow", "group"} {
-		m[name] = cache.NewCache()
+		if opts, ok := optionMap[name]; ok {
+			m[name] = cache.NewCache(opts...)
+		} else {
+			m[name] = cache.NewCache()
+		}
 	}
 	return m
 }

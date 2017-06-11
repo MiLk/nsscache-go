@@ -1,44 +1,76 @@
 package nsscache
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"path"
-
 	"github.com/milk/nsscache-go/cache"
-	"github.com/pkg/errors"
 )
 
 type testSource struct{}
 
 func (s *testSource) FillPasswdCache(c *cache.Cache) error {
-	c.Add(&cache.PasswdEntry{
-		Name:   "foo",
-		Passwd: "x",
-		UID:    1000,
-		GID:    1000,
-		GECOS:  "Mr Foo",
-		Dir:    "/home/foo",
-		Shell:  "/bin/bash",
-	})
+	c.Add(
+		&cache.PasswdEntry{
+			Name:   "foo",
+			Passwd: "x",
+			UID:    1000,
+			GID:    1000,
+			GECOS:  "Mr Foo",
+			Dir:    "/home/foo",
+			Shell:  "/bin/bash",
+		},
+		&cache.PasswdEntry{
+			Name:   "bar",
+			Passwd: "x",
+			UID:    1001,
+			GID:    1000,
+			GECOS:  "Mrs Bar",
+			Dir:    "/home/bar",
+			Shell:  "/bin/bash",
+		},
+		&cache.PasswdEntry{
+			Name:   "admin",
+			Passwd: "x",
+			UID:    1002,
+			GID:    1000,
+			GECOS:  "Admin",
+			Dir:    "/home/admin",
+			Shell:  "/bin/bash",
+		},
+	)
 	return nil
 }
 
 func (s *testSource) FillShadowCache(c *cache.Cache) error {
 	lstchg := int32(time.Now().Sub(time.Unix(0, 0)).Hours() / 24)
-	c.Add(&cache.ShadowEntry{
-		Name:   "foo",
-		Passwd: "!!",
-		Lstchg: cache.Int32(lstchg),
-	})
+	c.Add(
+		&cache.ShadowEntry{
+			Name:   "foo",
+			Passwd: "!!",
+			Lstchg: cache.Int32(lstchg),
+		},
+		&cache.ShadowEntry{
+			Name:   "bar",
+			Passwd: "!!",
+			Lstchg: cache.Int32(lstchg),
+		},
+		&cache.ShadowEntry{
+			Name:   "admin",
+			Passwd: "!!",
+			Lstchg: cache.Int32(lstchg),
+		},
+	)
 	return nil
 }
 
@@ -108,6 +140,10 @@ func TestCacheMap_WriteFiles(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "foo:x:1000:1000:Mr Foo:/home/foo:/bin/bash\n", string(res))
 
+	res, err = Getent(dir, "passwd", "bar")
+	assert.Nil(t, err)
+	assert.Equal(t, "bar:x:1001:1000:Mrs Bar:/home/bar:/bin/bash\n", string(res))
+
 	res, err = Getent(dir, "shadow", "foo")
 	lstchg := int32(time.Now().Sub(time.Unix(0, 0)).Hours() / 24)
 	assert.Nil(t, err)
@@ -155,4 +191,46 @@ func TestCacheMap_FillCaches2(t *testing.T) {
 	assert.NotNil(t, cm.FillCaches(&src))
 	src["passwd"] = true
 	assert.NotNil(t, cm.FillCaches(&src))
+}
+
+func TestNewCaches(t *testing.T) {
+	cm := NewCaches(Option{
+		CacheName: "passwd",
+		Option: cache.WithACL(func(e cache.Entry) bool {
+			pe, ok := e.(*cache.PasswdEntry)
+			if !ok {
+				return false
+			}
+			return pe.Name == "admin"
+		}),
+	}, Option{
+		CacheName: "shadow",
+		Option: cache.WithACL(func(e cache.Entry) bool {
+			se, ok := e.(*cache.ShadowEntry)
+			if !ok {
+				return false
+			}
+			return se.Name == "admin"
+		}),
+	})
+	src := testSource{}
+	assert.Nil(t, cm.FillCaches(&src))
+
+	m := (map[string]*cache.Cache)(cm)
+
+	var b bytes.Buffer
+	_, err := m["passwd"].WriteTo(&b)
+	assert.Nil(t, err)
+	assert.Equal(t, "admin:x:1002:1000:Admin:/home/admin:/bin/bash\n", b.String())
+
+	b.Reset()
+	_, err = m["shadow"].WriteTo(&b)
+	assert.Nil(t, err)
+	lstchg := int32(time.Now().Sub(time.Unix(0, 0)).Hours() / 24)
+	assert.Equal(t, fmt.Sprintf("admin:!!:%d::::::\n", lstchg), b.String())
+
+	b.Reset()
+	_, err = m["group"].WriteTo(&b)
+	assert.Nil(t, err)
+	assert.Equal(t, "foo:*:1000:\n", b.String())
 }
