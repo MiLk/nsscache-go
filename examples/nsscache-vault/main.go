@@ -4,8 +4,6 @@ package main
 import (
 	"os"
 
-	"github.com/hashicorp/vault/api"
-
 	nsscache "github.com/milk/nsscache-go"
 	vaultsource "github.com/milk/nsscache-go/source/vault"
 )
@@ -17,12 +15,7 @@ func main() {
 }
 
 func mainE() error {
-	client, err := api.NewClient(nil)
-	if err != nil {
-		return err
-	}
-
-	src, err := vaultsource.NewSource(vaultsource.Client(client))
+	src, err := vaultsource.CreateVaultSource("nsscache_test")
 	if err != nil {
 		return err
 	}
