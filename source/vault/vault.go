@@ -48,7 +48,11 @@ func NewSource(opts ...Option) (*VaultSource, error) {
 	return &s, nil
 }
 
-func (s *VaultSource) list(name string, c *cache.Cache, n func() cache.Entry) error {
+func (s *VaultSource) Client() *api.Client {
+	return s.client
+}
+
+func (s *VaultSource) list(name string, c *cache.Cache, createEntry func() cache.Entry) error {
 	prefix := fmt.Sprintf("secret/%s/%s", s.prefix, name)
 	sec, err := s.client.Logical().List(prefix)
 	if err != nil {
@@ -69,7 +73,7 @@ func (s *VaultSource) list(name string, c *cache.Cache, n func() cache.Entry) er
 		value := sec.Data["value"].(string)
 		b := bytes.NewBufferString(value)
 		b64 := base64.NewDecoder(base64.StdEncoding, b)
-		e := n()
+		e := createEntry()
 		err = json.NewDecoder(b64).Decode(e)
 		if err != nil {
 			return errors.Wrap(err, "json decoding")
