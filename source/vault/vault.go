@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/vault/api"
 	"github.com/pkg/errors"
 
-	"github.com/milk/nsscache-go/cache"
+	"github.com/MiLk/nsscache-go/cache"
 )
 
 type VaultSource struct {

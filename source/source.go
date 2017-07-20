@@ -1,7 +1,7 @@
 // source contains the interfaces to implement to create a new source
 package source
 
-import "github.com/milk/nsscache-go/cache"
+import "github.com/MiLk/nsscache-go/cache"
 
 type PasswdSource interface {
 	FillPasswdCache(c *cache.Cache) error

@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/milk/nsscache-go/cache"
+	"github.com/MiLk/nsscache-go/cache"
 )
 
 type testSource struct{}

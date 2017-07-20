@@ -4,8 +4,8 @@ package main
 import (
 	"os"
 
-	nsscache "github.com/milk/nsscache-go"
-	vaultsource "github.com/milk/nsscache-go/source/vault"
+	nsscache "github.com/MiLk/nsscache-go"
+	vaultsource "github.com/MiLk/nsscache-go/source/vault"
 )
 
 func main() {
