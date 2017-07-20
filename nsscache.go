@@ -7,8 +7,8 @@ import (
 
 	"os"
 
-	"github.com/milk/nsscache-go/cache"
-	"github.com/milk/nsscache-go/source"
+	"github.com/MiLk/nsscache-go/cache"
+	"github.com/MiLk/nsscache-go/source"
 )
 
 // CacheMap allows you to manage the caches as a group

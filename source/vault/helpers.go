@@ -3,8 +3,8 @@ package vault
 import (
 	"os"
 
+	"github.com/MiLk/nsscache-go/source"
 	"github.com/hashicorp/vault/api"
-	"github.com/milk/nsscache-go/source"
 )
 
 func CreateVaultSource(prefix string) (source.Source, error) {

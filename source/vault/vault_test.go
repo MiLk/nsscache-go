@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/vault/vault"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/milk/nsscache-go/cache"
+	"github.com/MiLk/nsscache-go/cache"
 )
 
 func setupVault(t *testing.T) (net.Listener, *api.Client, error) {
