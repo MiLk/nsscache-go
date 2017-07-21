@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -144,10 +145,13 @@ func TestCacheMap_WriteFiles(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "bar:x:1001:1000:Mrs Bar:/home/bar:/bin/bash\n", string(res))
 
-	res, err = Getent(dir, "shadow", "foo")
-	lstchg := int32(time.Now().Sub(time.Unix(0, 0)).Hours() / 24)
-	assert.Nil(t, err)
-	assert.Equal(t, fmt.Sprintf("foo:!!:%d::::::\n", lstchg), string(res))
+	// On non-linux platforms, the permissions are wrong due to how docker share the volume
+	if runtime.GOOS == "linux" {
+		res, err = Getent(dir, "shadow", "foo")
+		lstchg := int32(time.Now().Sub(time.Unix(0, 0)).Hours() / 24)
+		assert.Nil(t, err)
+		assert.Equal(t, fmt.Sprintf("foo:!!:%d::::::\n", lstchg), string(res))
+	}
 
 	res, err = Getent(dir, "group", "foo")
 	assert.Nil(t, err)

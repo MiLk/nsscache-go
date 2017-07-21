@@ -18,6 +18,10 @@ import (
 	"github.com/MiLk/nsscache-go/cache"
 )
 
+func init() {
+	os.Unsetenv("VAULT_ADDR")
+}
+
 func setupVault(t *testing.T) (net.Listener, *api.Client, error) {
 	core, _, token := vault.TestCoreUnsealed(t)
 	ln, addr := http.TestServer(t, core)
@@ -49,6 +53,8 @@ func TestNewSource(t *testing.T) {
 	s, err := NewSource()
 	assert.Nil(t, err)
 	assert.Equal(t, "https://127.0.0.1:8200", s.client.Address())
+
+	assert.Equal(t, s.client, s.Client())
 
 	os.Setenv("VAULT_SKIP_VERIFY", "azerty")
 	_, err = NewSource()
@@ -206,4 +212,11 @@ func TestVaultSource_FillGroupCache(t *testing.T) {
 	expected := `foo:*:1000:
 `
 	assert.Equal(t, expected, b.String())
+}
+
+func TestVaultSource_List(t *testing.T) {
+	s, err := NewSource()
+	assert.Nil(t, err)
+	err = s.list("name", nil, nil)
+	assert.NotNil(t, err)
 }
