@@ -2,6 +2,7 @@ package s3
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,23 +12,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestS3Source_FillPasswdCache(t *testing.T) {
+func TestS3Source_FillPasswdCache1(t *testing.T) {
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
-	r := `{
-  "name": "foo",
-  "passwd": "x",
-  "uid": 1000,
-  "gid": 1000,
-  "gecos": "Mr Foo",
-  "dir": "/home/foo",
-  "shell": "/bin/bash"
-}`
-	svc := &mockS3Client{
-		getObjectResp: mockGetObjectResponse(r),
-	}
+	r := `[{
+	"name": "foo",
+	"passwd": "x",
+	"uid": 1000,
+	"gid": 1000,
+	"gecos": "Mr Foo",
+	"dir": "/home/foo",
+	"shell": "/bin/bash"
+},
+{
+	"name": "var",
+	"passwd": "x",
+	"uid": 1001,
+	"gid": 1000,
+	"gecos": "Mr Var",
+	"dir": "/home/var",
+	"shell": "/bin/bash"
+}]`
+	svc := CreateMockS3GetObjectClient(r, nil)
 	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
 	src := CreateS3Source(svc, prefix, "testing-bucket")
 	c := cache.NewCache()
@@ -38,8 +46,86 @@ func TestS3Source_FillPasswdCache(t *testing.T) {
 	n, err := c.WriteTo(&b)
 
 	assert.Nil(t, err)
-	assert.EqualValues(t, 43, n)
-	assert.Equal(t, "foo:x:1000:1000:Mr Foo:/home/foo:/bin/bash\n", b.String())
+	assert.EqualValues(t, 86, n)
+	expected := `foo:x:1000:1000:Mr Foo:/home/foo:/bin/bash
+var:x:1001:1000:Mr Var:/home/var:/bin/bash
+`
+	assert.Equal(t, expected, b.String())
+}
+
+func TestS3Source_FillPasswdCache2(t *testing.T) {
+	// json decoding error
+	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+
+	r := `[{
+	"name": "foo",
+	"passwd": "x,
+	"uid": 1000,
+	"gid": 1000,
+	"gecos": "Mr Foo",
+	"dir": "/home/foo",
+	"shell": "/bin/bash"
+}]`
+	svc := CreateMockS3GetObjectClient(r, nil)
+	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
+	src := CreateS3Source(svc, prefix, "testing-bucket")
+	c := cache.NewCache()
+
+	err = src.FillPasswdCache(c)
+	expectedErr := "json decoding: invalid character '\\n' in string literal"
+	assert.Equal(t, expectedErr, err.Error())
+}
+
+func TestS3Source_FillPasswdCache3(t *testing.T) {
+	// json does not match entry format
+	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+
+	r := `[{
+	"name": "Foo",
+	"passwd": "x",
+	"uid": "1000",
+	"gid": 1000,
+	"gecos": "Mr Foo",
+	"dir": "/home/foo",
+	"shell": "/bin/bash"
+}]`
+	svc := CreateMockS3GetObjectClient(r, nil)
+	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
+	src := CreateS3Source(svc, prefix, "testing-bucket")
+	c := cache.NewCache()
+
+	err = src.FillPasswdCache(c)
+	expectedErr := "json does not match entry format: json: cannot unmarshal string into Go struct field PasswdEntry.uid of type uint32"
+	assert.Equal(t, expectedErr, err.Error())
+}
+
+func TestS3Source_FillPasswdCache4(t *testing.T) {
+	// error downloading from s3
+	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+
+	r := `[{
+	"name": "Foo",
+	"passwd": "x",
+	"uid": "1000",
+	"gid": 1000,
+	"gecos": "Mr Foo",
+	"dir": "/home/foo",
+	"shell": "/bin/bash"
+}]`
+	svc := CreateMockS3GetObjectClient(r, errors.New("some error"))
+	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
+	src := CreateS3Source(svc, prefix, "testing-bucket")
+	c := cache.NewCache()
+
+	err = src.FillPasswdCache(c)
+	expectedErr := "downloading from S3: some error"
+	assert.Equal(t, expectedErr, err.Error())
 }
 
 func TestS3Source_FillShadowCache(t *testing.T) {
@@ -47,16 +133,15 @@ func TestS3Source_FillShadowCache(t *testing.T) {
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
-	r := `{
+	r := `[{
   "name": "foo",
   "passwd": "123!!",
   "lstchg": "1000",
   "max": "23",
   "expire": "44"
-}`
-	svc := &mockS3Client{
-		getObjectResp: mockGetObjectResponse(r),
-	}
+}]`
+
+	svc := CreateMockS3GetObjectClient(r, nil)
 	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
 	src := CreateS3Source(svc, prefix, "testing-bucket")
 	c := cache.NewCache()
@@ -76,16 +161,14 @@ func TestS3Source_FillGroupCache(t *testing.T) {
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
-	r := `{
+	r := `[{
   "name": "group",
   "passwd": "123!!",
   "gid": 1000,
   "mem": ["foo", "var", "baz"]
-}`
+}]`
 
-	svc := &mockS3Client{
-		getObjectResp: mockGetObjectResponse(r),
-	}
+	svc := CreateMockS3GetObjectClient(r, nil)
 	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
 	src := CreateS3Source(svc, prefix, "testing-bucket")
 	c := cache.NewCache()
