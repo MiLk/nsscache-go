@@ -16,6 +16,8 @@ type S3Source struct {
 	client s3iface.S3API
 }
 
+type JSONArray []map[string]interface{}
+
 func CreateS3Source(client s3iface.S3API, prefix string, bucket string) source.Source {
 	return &S3Source{
 		client: client,
@@ -24,7 +26,7 @@ func CreateS3Source(client s3iface.S3API, prefix string, bucket string) source.S
 	}
 }
 
-func (s *S3Source) run(key string, e cache.Entry, c *cache.Cache) error {
+func (s *S3Source) run(key string, c *cache.Cache, createEntry func() cache.Entry) error {
 	if s.prefix != "" {
 		key = fmt.Sprintf("%s/%s", s.prefix, key)
 	}
@@ -35,27 +37,45 @@ func (s *S3Source) run(key string, e cache.Entry, c *cache.Cache) error {
 		return errors.Wrap(err, "downloading from S3")
 	}
 
-	err = json.Unmarshal([]byte(data), e)
+	r := make(JSONArray, 0)
+	err = json.Unmarshal([]byte(data), &r)
 
 	if err != nil {
 		return errors.Wrap(err, "json decoding")
 	}
 
-	c.Add(e)
+	for _, elem := range r {
+		str, _ := json.Marshal(elem)
+
+		e := createEntry()
+		err = json.Unmarshal([]byte(str), e)
+		if err != nil {
+			return errors.Wrap(err, "json does not match entry format")
+		}
+
+		c.Add(e)
+	}
+
 	return nil
 }
 
 // FillPasswdCache downloads shadow file from S3, parses the JSON and writes the passwd NSS cache file to disk.
 func (s *S3Source) FillPasswdCache(c *cache.Cache) error {
-	return s.run("passwd", &cache.PasswdEntry{}, c)
+	return s.run("passwd", c, func() cache.Entry {
+		return &cache.PasswdEntry{}
+	})
 }
 
 // FillShadowCache downloads shadow file from S3, parses the JSON and writes the shadow NSS cache file to disk.
 func (s *S3Source) FillShadowCache(c *cache.Cache) error {
-	return s.run("shadow", &cache.ShadowEntry{}, c)
+	return s.run("shadow", c, func() cache.Entry {
+		return &cache.ShadowEntry{}
+	})
 }
 
 // FillGroupCache downloads shadow file from S3, parses the JSON and writes the group NSS cache file to disk.
 func (s *S3Source) FillGroupCache(c *cache.Cache) error {
-	return s.run("group", &cache.GroupEntry{}, c)
+	return s.run("group", c, func() cache.Entry {
+		return &cache.GroupEntry{}
+	})
 }
