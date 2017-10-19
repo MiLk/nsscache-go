@@ -2,11 +2,13 @@ package s3
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/pkg/errors"
 )
 
 func DownloadS3Data(c s3iface.S3API, bucket string, key string) ([]byte, error) {
@@ -16,7 +18,7 @@ func DownloadS3Data(c s3iface.S3API, bucket string, key string) ([]byte, error) 
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, fmt.Sprintf("error getting object %s from bucket %s", key, bucket))
 	}
 	defer results.Body.Close()
 

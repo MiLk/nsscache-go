@@ -124,7 +124,7 @@ func TestS3Source_FillPasswdCache4(t *testing.T) {
 	c := cache.NewCache()
 
 	err = src.FillPasswdCache(c)
-	expectedErr := "downloading from S3: some error"
+	expectedErr := "downloading from S3: error getting object secret/nsscache-test/passwd from bucket testing-bucket: some error"
 	assert.Equal(t, expectedErr, err.Error())
 }
 
