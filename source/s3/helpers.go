@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// DownloadS3Data returns the contents of a file (key argument) from the given bucket
 func DownloadS3Data(c s3iface.S3API, bucket string, key string) ([]byte, error) {
 	results, err := c.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(bucket),

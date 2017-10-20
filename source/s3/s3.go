@@ -10,14 +10,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+/*
+S3Source describes a source.Source for S3 backends:
+  - prefix: the path within the S3 bucket to the passwd, shadow and group files
+  - bucket: the name of the S3 bucket
+  - client: the S3 client
+*/
 type S3Source struct {
 	prefix string
 	bucket string
 	client s3iface.S3API
 }
 
-type JSONArray []map[string]interface{}
-
+// CreateS3Source returns a new Source for fetching data from S3 backends
 func CreateS3Source(client s3iface.S3API, prefix string, bucket string) source.Source {
 	return &S3Source{
 		client: client,
@@ -37,10 +42,8 @@ func (s *S3Source) run(key string, c *cache.Cache, createEntry func() cache.Entr
 		return errors.Wrap(err, "downloading from S3")
 	}
 
-	r := make(JSONArray, 0)
-	err = json.Unmarshal([]byte(data), &r)
-
-	if err != nil {
+	r := make([]interface{}, 0)
+	if err := json.Unmarshal([]byte(data), &r); err != nil {
 		return errors.Wrap(err, "json decoding")
 	}
 
@@ -48,8 +51,7 @@ func (s *S3Source) run(key string, c *cache.Cache, createEntry func() cache.Entr
 		str, _ := json.Marshal(elem)
 
 		e := createEntry()
-		err = json.Unmarshal([]byte(str), e)
-		if err != nil {
+		if err := json.Unmarshal([]byte(str), e); err != nil {
 			return errors.Wrap(err, "json does not match entry format")
 		}
 

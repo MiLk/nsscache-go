@@ -10,18 +10,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockS3GetObject struct {
+type MockS3GetObject struct {
 	s3iface.S3API
 	resp *s3.GetObjectOutput
 	err  error
 }
 
-func (m *mockS3GetObject) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput, error) {
+func (m *MockS3GetObject) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput, error) {
 	return m.resp, m.err
 }
 
-func CreateMockS3GetObjectClient(resp string, err error) *mockS3GetObject {
-	return &mockS3GetObject{
+/*
+CreateMockS3GetObjectClient returns an object for using in your tests that will return
+always the given resp and err from parameters. For example:
+
+svc := CreateMockS3GetObjectClient("My response", nil)
+
+Now you can use this client anywhere you need a s3iface.S3API
+*/
+func CreateMockS3GetObjectClient(resp string, err error) *MockS3GetObject {
+	return &MockS3GetObject{
 		resp: &s3.GetObjectOutput{
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(resp))),
 		},

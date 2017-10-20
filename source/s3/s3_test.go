@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestS3Source_FillPasswdCache1(t *testing.T) {
+func TestS3Source_FillPasswdCache_OK(t *testing.T) {
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
@@ -53,7 +53,7 @@ var:x:1001:1000:Mr Var:/home/var:/bin/bash
 	assert.Equal(t, expected, b.String())
 }
 
-func TestS3Source_FillPasswdCache2(t *testing.T) {
+func TestS3Source_FillPasswdCache_JSONDecodingError(t *testing.T) {
 	// json decoding error
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
@@ -78,7 +78,7 @@ func TestS3Source_FillPasswdCache2(t *testing.T) {
 	assert.Equal(t, expectedErr, err.Error())
 }
 
-func TestS3Source_FillPasswdCache3(t *testing.T) {
+func TestS3Source_FillPasswdCache_BadEntryFormat(t *testing.T) {
 	// json does not match entry format
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
@@ -103,7 +103,7 @@ func TestS3Source_FillPasswdCache3(t *testing.T) {
 	assert.Equal(t, expectedErr, err.Error())
 }
 
-func TestS3Source_FillPasswdCache4(t *testing.T) {
+func TestS3Source_FillPasswdCache_DownloadError(t *testing.T) {
 	// error downloading from s3
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
@@ -128,7 +128,7 @@ func TestS3Source_FillPasswdCache4(t *testing.T) {
 	assert.Equal(t, expectedErr, err.Error())
 }
 
-func TestS3Source_FillShadowCache(t *testing.T) {
+func TestS3Source_FillShadowCache_OK(t *testing.T) {
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
@@ -156,7 +156,7 @@ func TestS3Source_FillShadowCache(t *testing.T) {
 	assert.Equal(t, "foo:123!!:1000::23:::44:\n", b.String())
 }
 
-func TestS3Source_FillGroupCache(t *testing.T) {
+func TestS3Source_FillGroupCache_OK(t *testing.T) {
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
