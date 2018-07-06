@@ -1,12 +1,15 @@
 language: go
 go:
   - 1.9.x
+  - 1.10.x
   - tip
 services:
   - docker
 before_install:
   - pushd docker && docker build -t nsscache-go:latest . && popd
   - go get github.com/mattn/goveralls
+  - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+  - dep ensure
 script:
   - $GOPATH/bin/goveralls -service=travis-ci
 branches:

@@ -10,6 +10,7 @@ import (
 	"os"
 	"testing"
 
+	kv "github.com/hashicorp/vault-plugin-secrets-kv"
 	"github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/http"
 	"github.com/hashicorp/vault/vault"
@@ -23,6 +24,8 @@ func init() {
 }
 
 func setupVault(t *testing.T) (net.Listener, *api.Client, error) {
+	vault.AddTestLogicalBackend("kv", kv.VersionedKVFactory)
+
 	core, _, token := vault.TestCoreUnsealed(t)
 	ln, addr := http.TestServer(t, core)
 
@@ -34,17 +37,26 @@ func setupVault(t *testing.T) (net.Listener, *api.Client, error) {
 	client.SetAddress(addr)
 	client.SetToken(token)
 
+	err = client.Sys().TuneMount("secret", api.MountConfigInput{
+		Options: map[string]string{
+			"version": "2",
+		},
+	})
+	assert.Nil(t, err)
+
 	return ln, client, nil
 
 }
 
-func addEntry(c *api.Client, prefix, name string, e cache.Entry) error {
+func addEntry(c *api.Client, mountPath, prefix, name string, e cache.Entry) error {
 	b, err := json.Marshal(e)
 	if err != nil {
 		return err
 	}
-	_, err = c.Logical().Write(fmt.Sprintf("%s/%s", prefix, name), map[string]interface{}{
-		"value": b,
+	_, err = c.Logical().Write(fmt.Sprintf("%s/data/%s/%s", mountPath, prefix, name), map[string]interface{}{
+		"data": map[string]interface{}{
+			"value": b,
+		},
 	})
 	return err
 }
@@ -71,7 +83,8 @@ func TestVaultSource_FillPasswdCache(t *testing.T) {
 	defer ln.Close()
 	assert.Nil(t, err)
 
-	prefix := fmt.Sprintf("secret/%s/%s", "nsscache-test", "passwd")
+	mountPath := "secret"
+	prefix := fmt.Sprintf("%s/%s", "nsscache-test", "passwd")
 	entry := cache.PasswdEntry{
 		Name:   "foo",
 		Passwd: "x",
@@ -81,14 +94,14 @@ func TestVaultSource_FillPasswdCache(t *testing.T) {
 		Dir:    "/home/foo",
 		Shell:  "/bin/bash",
 	}
-	assert.Nil(t, addEntry(client, prefix, entry.Name, &entry))
+	assert.Nil(t, addEntry(client, mountPath, prefix, entry.Name, &entry))
 	entry.Name = "bar"
 	entry.UID = 1001
 	entry.GECOS = "Mrs Bar"
 	entry.Dir = "/home/bar"
-	assert.Nil(t, addEntry(client, prefix, entry.Name, &entry))
+	assert.Nil(t, addEntry(client, mountPath, prefix, entry.Name, &entry))
 
-	s, err := NewSource(Client(client), Prefix("nsscache-test"))
+	s, err := NewSource(Client(client), MountPath(mountPath), Prefix("nsscache-test"))
 	assert.Nil(t, err)
 
 	c := cache.NewCache()
@@ -105,8 +118,10 @@ foo:x:1000:1000:Mr Foo:/home/foo:/bin/bash
 	assert.Equal(t, expected, b.String())
 
 	// JSON error
-	_, err = client.Logical().Write(fmt.Sprintf("%s/%s", prefix, "invalid"), map[string]interface{}{
-		"value": base64.StdEncoding.EncodeToString([]byte("{[}}]'[")),
+	_, err = client.Logical().Write(fmt.Sprintf("%s/data/%s/%s", mountPath, prefix, "invalid"), map[string]interface{}{
+		"data": map[string]interface{}{
+			"value": base64.StdEncoding.EncodeToString([]byte("{[}}]'[")),
+		},
 	})
 	assert.Nil(t, err)
 
@@ -115,8 +130,10 @@ foo:x:1000:1000:Mr Foo:/home/foo:/bin/bash
 	assert.NotNil(t, err)
 
 	// Base64 error
-	_, err = client.Logical().Write(fmt.Sprintf("%s/%s", prefix, "invalid"), map[string]interface{}{
-		"value": "foobar{[}}]'[",
+	_, err = client.Logical().Write(fmt.Sprintf("%s/data/%s/%s", mountPath, prefix, "invalid"), map[string]interface{}{
+		"data": map[string]interface{}{
+			"value": "foobar{[}}]'[",
+		},
 	})
 	assert.Nil(t, err)
 
@@ -148,8 +165,9 @@ func TestVaultSource_FillShadowCache(t *testing.T) {
 	defer ln.Close()
 	assert.Nil(t, err)
 
-	prefix := fmt.Sprintf("secret/%s/%s", "nsscache-test", "shadow")
-	_, err = client.Logical().Delete(prefix)
+	mountPath := "secret"
+	prefix := fmt.Sprintf("%s/%s", "nsscache-test", "shadow")
+	_, err = client.Logical().Delete(fmt.Sprintf("%s/metadata/%s", mountPath, prefix))
 	assert.Nil(t, err)
 
 	entry := cache.ShadowEntry{
@@ -157,11 +175,11 @@ func TestVaultSource_FillShadowCache(t *testing.T) {
 		Passwd: "!!",
 		Lstchg: cache.Int32(17321),
 	}
-	assert.Nil(t, addEntry(client, prefix, entry.Name, &entry))
+	assert.Nil(t, addEntry(client, mountPath, prefix, entry.Name, &entry))
 	entry.Name = "bar"
-	assert.Nil(t, addEntry(client, prefix, entry.Name, &entry))
+	assert.Nil(t, addEntry(client, mountPath, prefix, entry.Name, &entry))
 
-	s, err := NewSource(Client(client), Prefix("nsscache-test"))
+	s, err := NewSource(Client(client), MountPath(mountPath), Prefix("nsscache-test"))
 	assert.Nil(t, err)
 
 	c := cache.NewCache()
@@ -187,8 +205,9 @@ func TestVaultSource_FillGroupCache(t *testing.T) {
 	defer ln.Close()
 	assert.Nil(t, err)
 
-	prefix := fmt.Sprintf("secret/%s/%s", "nsscache-test", "group")
-	_, err = client.Logical().Delete(prefix)
+	mountPath := "secret"
+	prefix := fmt.Sprintf("%s/%s", "nsscache-test", "group")
+	_, err = client.Logical().Delete(fmt.Sprintf("%s/metadata/%s", mountPath, prefix))
 	assert.Nil(t, err)
 
 	entry := cache.GroupEntry{
@@ -196,9 +215,9 @@ func TestVaultSource_FillGroupCache(t *testing.T) {
 		Passwd: "*",
 		GID:    1000,
 	}
-	assert.Nil(t, addEntry(client, prefix, entry.Name, &entry))
+	assert.Nil(t, addEntry(client, mountPath, prefix, entry.Name, &entry))
 
-	s, err := NewSource(Client(client), Prefix("nsscache-test"))
+	s, err := NewSource(Client(client), MountPath(mountPath), Prefix("nsscache-test"))
 	assert.Nil(t, err)
 
 	c := cache.NewCache()
