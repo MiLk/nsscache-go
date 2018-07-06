@@ -14,8 +14,9 @@ import (
 )
 
 type VaultSource struct {
-	client *api.Client
-	prefix string
+	client    *api.Client
+	prefix    string
+	mountPath string
 }
 
 type Option func(*VaultSource)
@@ -28,9 +29,14 @@ func Prefix(p string) Option {
 	return func(s *VaultSource) { s.prefix = p }
 }
 
+func MountPath(m string) Option {
+	return func(s *VaultSource) { s.mountPath = m }
+}
+
 func NewSource(opts ...Option) (*VaultSource, error) {
 	s := VaultSource{
-		prefix: "nsscache",
+		prefix:    "nsscache",
+		mountPath: "secret",
 	}
 
 	for _, opt := range opts {
@@ -53,8 +59,8 @@ func (s *VaultSource) Client() *api.Client {
 }
 
 func (s *VaultSource) list(name string, c *cache.Cache, createEntry func() cache.Entry) error {
-	prefix := fmt.Sprintf("secret/%s/%s", s.prefix, name)
-	sec, err := s.client.Logical().List(prefix)
+	prefix := fmt.Sprintf("%s/%s", s.prefix, name)
+	sec, err := s.client.Logical().List(fmt.Sprintf("%s/metadata/%s", s.mountPath, prefix))
 	if err != nil {
 		return errors.Wrap(err, "list from vault")
 	}
@@ -66,11 +72,11 @@ func (s *VaultSource) list(name string, c *cache.Cache, createEntry func() cache
 
 	keys := sec.Data["keys"].([]interface{})
 	for _, k := range keys {
-		sec, err := s.client.Logical().Read(fmt.Sprintf("%s/%s", prefix, k))
+		sec, err := s.client.Logical().Read(fmt.Sprintf("%s/data/%s/%s", s.mountPath, prefix, k))
 		if err != nil {
 			return errors.Wrap(err, "read from vault")
 		}
-		value := sec.Data["value"].(string)
+		value := sec.Data["data"].(map[string]interface{})["value"].(string)
 		b := bytes.NewBufferString(value)
 		b64 := base64.NewDecoder(base64.StdEncoding, b)
 		e := createEntry()
