@@ -1,6 +1,9 @@
 package vault
 
 import (
+	"encoding/json"
+	"errors"
+	"io/ioutil"
 	"os"
 
 	"github.com/MiLk/nsscache-go/source"
@@ -8,50 +11,48 @@ import (
 )
 
 func CreateVaultSource(prefix string) (source.Source, error) {
-	client, err := CreateVaultClient()
+	client, err := CreateVaultClient("/etc/token-via-agent")
 	if err != nil {
 		return nil, err
 	}
 	return NewSource(Client(client), Prefix(prefix))
 }
 
-func CreateVaultClient() (*api.Client, error) {
+// CreateVaultClient returns a Vault Client with a valid Token provided by the Vault Agent assigned to it.
+// The token must be wrapped by the sink.
+//
+// @path indicates the path of the file to read from. This file is where the token provided by the agent is supposed to be.
+func CreateVaultClient(path string) (*api.Client, error) {
 	client, err := api.NewClient(nil)
 	if err != nil {
 		return nil, err
 	}
-	// If there is no token read from the environment
-	if client.Token() == "" {
-		ghToken := os.Getenv("VAULT_AUTH_GITHUB_TOKEN")
-		if ghToken != "" {
-			// Try to authenticate with GitHub if there is a token
-			secret, err := client.Logical().Write("auth/github/login", map[string]interface{}{
-				"token": ghToken,
-			})
-			if err != nil {
-				return nil, err
-			}
-			client.SetToken(secret.Auth.ClientToken)
-		} else {
-			// Try to authenticate with EC2
-			pkcs7, err := getPkcs7()
-			if err != nil {
-				return nil, err
-			}
-			nonce, err := getNonce("/etc/vault-nonce")
-			if err != nil {
-				return nil, err
-			}
-			secret, err := client.Logical().Write("auth/aws-ec2/login", map[string]interface{}{
-				"role":  "nsscache",
-				"pkcs7": pkcs7,
-				"nonce": nonce,
-			})
-			if err != nil {
-				return nil, err
-			}
-			client.SetToken(secret.Auth.ClientToken)
-		}
+
+	tokenFile, err := os.Open(path)
+	if err != nil {
+		return nil, err
 	}
+	defer tokenFile.Close()
+
+	tokenRead, _ := ioutil.ReadAll(tokenFile)
+
+	var wrappedToken map[string]interface{}
+	json.Unmarshal(tokenRead, &wrappedToken)
+
+	secret, err := client.Logical().Unwrap(wrappedToken["token"].(string))
+	if err != nil {
+		return nil, err
+	}
+
+	if secret == nil {
+		return nil, errors.New("Could not find wrapped response")
+	}
+
+	token, ok := secret.Data["token"]
+	if !ok {
+		return nil, errors.New("Key `token` was not found")
+	}
+
+	client.SetToken(token.(string))
 	return client, nil
 }
