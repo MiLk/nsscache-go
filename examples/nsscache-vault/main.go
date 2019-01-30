@@ -15,7 +15,7 @@ func main() {
 }
 
 func mainE() error {
-	src, err := vaultsource.CreateVaultSource("nsscache_test")
+	src, err := vaultsource.CreateVaultSource("nsscache_test", "filePath")
 	if err != nil {
 		return err
 	}

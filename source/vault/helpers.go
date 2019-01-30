@@ -10,8 +10,8 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
-func CreateVaultSource(prefix string) (source.Source, error) {
-	client, err := CreateVaultClient("/etc/token-via-agent")
+func CreateVaultSource(prefix string, fpath string) (source.Source, error) {
+	client, err := CreateVaultClient(fpath)
 	if err != nil {
 		return nil, err
 	}
@@ -19,40 +19,53 @@ func CreateVaultSource(prefix string) (source.Source, error) {
 }
 
 // CreateVaultClient returns a Vault Client with a valid Token provided by the Vault Agent assigned to it.
-// The token must be wrapped by the sink.
 //
-// @path indicates the path of the file to read from. This file is where the token provided by the agent is supposed to be.
-func CreateVaultClient(path string) (*api.Client, error) {
+// @fpath indicates the path of the file to read from. This file is where the token provided by the agent is supposed to be.
+func CreateVaultClient(fpath string) (*api.Client, error) {
 	client, err := api.NewClient(nil)
 	if err != nil {
 		return nil, err
 	}
 
-	tokenFile, err := os.Open(path)
+	tokenFile, err := os.Open(fpath)
 	if err != nil {
 		return nil, err
 	}
 	defer tokenFile.Close()
 
-	tokenRead, _ := ioutil.ReadAll(tokenFile)
-
-	var wrappedToken map[string]interface{}
-	json.Unmarshal(tokenRead, &wrappedToken)
-
-	secret, err := client.Logical().Unwrap(wrappedToken["token"].(string))
+	rawToken, err := ioutil.ReadAll(tokenFile)
 	if err != nil {
 		return nil, err
 	}
 
-	if secret == nil {
-		return nil, errors.New("Could not find wrapped response")
+	var wrappedToken map[string]interface{}
+	var token string
+
+	// Check if the token has been stored in JSON format (wrapped token) or as a plain string
+	if err := json.Unmarshal(rawToken, &wrappedToken); err == nil {
+		secret, err := client.Logical().Unwrap(wrappedToken["token"].(string))
+		if err != nil {
+			return nil, err
+		}
+
+		if secret == nil {
+			return nil, errors.New("Could not find wrapped response")
+		}
+
+		dataToken, ok := secret.Data["token"].(string)
+		if !ok {
+			return nil, errors.New("Key `token` was not found")
+		}
+
+		token = dataToken
+	} else {
+		token = string(rawToken)
 	}
 
-	token, ok := secret.Data["token"]
-	if !ok {
-		return nil, errors.New("Key `token` was not found")
+	if token == "" {
+		return nil, errors.New("Unable to fetch token from file")
 	}
 
-	client.SetToken(token.(string))
+	client.SetToken(token)
 	return client, nil
 }
