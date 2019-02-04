@@ -1,40 +1,46 @@
 package vault
 
 import (
-	"os"
-	"strings"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateVaultClient(t *testing.T) {
-	os.Setenv("VAULT_TOKEN", "test")
-	client, err := CreateVaultClient()
-	assert.NotNil(t, client)
-	assert.Nil(t, err)
+type mockTokenReader struct {
+	result []byte
+	err    error
 }
 
-func TestCreateVaultSource(t *testing.T) {
-	os.Setenv("VAULT_TOKEN", "test")
-	source, err := CreateVaultSource("nsscache")
+func (m *mockTokenReader) ReadToken() ([]byte, error) {
+	return m.result, m.err
+}
+
+func TestCreateVaultSourceWithTokenReaderAllOk(t *testing.T) {
+	token := []byte("my-token")
+	tr := &mockTokenReader{token, nil}
+	source, err := CreateVaultSourceWithTokenReader("prefix", tr)
+	if err != nil {
+		t.Fatalf("unexpected error creating vault source: %s", err.Error())
+	}
+
 	assert.NotNil(t, source)
-	assert.Nil(t, err)
 }
 
-func TestCreateVaultSource2(t *testing.T) {
-	os.Setenv("VAULT_SKIP_VERIFY", "qwerty")
-	source, err := CreateVaultSource("nsscache")
+func TestCreateVaultSourceWithTokenReaderTokenIsEmpty(t *testing.T) {
+	token := []byte("")
+	tr := &mockTokenReader{token, nil}
+	source, err := CreateVaultSourceWithTokenReader("prefix", tr)
+
+	assert.EqualError(t, err, "Unable to fetch token from file")
 	assert.Nil(t, source)
-	assert.NotNil(t, err)
-	os.Unsetenv("VAULT_SKIP_VERIFY")
 }
 
-func TestCreateVaultSource3(t *testing.T) {
-	os.Unsetenv("VAULT_TOKEN")
-	os.Setenv("VAULT_AUTH_GITHUB_TOKEN", "qweryty")
-	source, err := CreateVaultSource("nsscache")
+func TestCreateVaultSourceWithTokenReaderError(t *testing.T) {
+	token := []byte("my-token")
+	tr := &mockTokenReader{token, errors.New("error reading token")}
+	source, err := CreateVaultSourceWithTokenReader("prefix", tr)
+
+	assert.EqualError(t, err, "error reading token")
 	assert.Nil(t, source)
-	assert.NotNil(t, err)
-	assert.Equal(t, true, strings.Contains(err.Error(), "Put https://127.0.0.1:8200/v1/auth/github/login:"))
 }

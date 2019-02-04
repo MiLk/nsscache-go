@@ -10,13 +10,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/MiLk/nsscache-go/cache"
 	kv "github.com/hashicorp/vault-plugin-secrets-kv"
 	"github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/http"
 	"github.com/hashicorp/vault/vault"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/MiLk/nsscache-go/cache"
 )
 
 func init() {
