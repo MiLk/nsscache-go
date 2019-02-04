@@ -33,7 +33,7 @@ func (f *fileTokenReader) ReadToken() ([]byte, error) {
 	return rawToken, nil
 }
 
-type wrappedToken struct {
+type wrappedData struct {
 	Token           string `json:"token"`
 	Accessor        string `json:"accessor"`
 	TTL             int    `json:"ttl"`
@@ -68,17 +68,17 @@ func CreateVaultSourceWithTokenReader(prefix string, tr tokenReader) (source.Sou
 		return nil, err
 	}
 
-	var wrappedToken wrappedToken
+	var wrappedData wrappedData
 	var token string
 
 	// Check if the token has been stored in JSON format (wrapped token) or as a plain string
-	if err := json.Unmarshal(rawToken, &wrappedToken); err == nil {
-		wt := wrappedToken.Token
-		if wt == "" {
-			return nil, errors.New("Key `token` is missing")
+	if err := json.Unmarshal(rawToken, &wrappedData); err == nil {
+		unwrapToken := wrappedData.Token
+		if unwrapToken == "" {
+			return nil, errors.New("Unwrap token is empty")
 		}
 
-		secret, err := client.Logical().Unwrap(wt)
+		secret, err := client.Logical().Unwrap(unwrapToken)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func CreateVaultSourceWithTokenReader(prefix string, tr tokenReader) (source.Sou
 
 		dataToken, ok := secret.Data["token"].(string)
 		if !ok {
-			return nil, errors.New("Key `token` was not found on the response")
+			return nil, errors.New("Key `token` was not found on the unwrapped data")
 		}
 
 		token = dataToken
