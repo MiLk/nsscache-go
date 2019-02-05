@@ -2,6 +2,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 
 	nsscache "github.com/MiLk/nsscache-go"
@@ -15,7 +16,24 @@ func main() {
 }
 
 func mainE() error {
-	src, err := vaultsource.CreateVaultSource("nsscache_test", "filePath")
+	// Create a temporary file to read from ONLY for test purposes
+	file, err := ioutil.TempFile("/tmp", "test-token-file")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(file.Name())
+
+	token := []byte("token-test")
+
+	if _, err := file.Write(token); err != nil {
+		return err
+	}
+
+	if err := file.Close(); err != nil {
+		return err
+	}
+
+	src, err := vaultsource.CreateVaultSource("nsscache_test", file.Name())
 	if err != nil {
 		return err
 	}

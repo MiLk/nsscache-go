@@ -2,7 +2,6 @@ package vault
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"log"
 	"os"
@@ -11,48 +10,70 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockTokenReader struct {
-	result []byte
-	err    error
-}
+func TestCreateVaultClientAllOk(t *testing.T) {
+	file, err := ioutil.TempFile("/tmp", "test-token-file")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(file.Name())
 
-func (m *mockTokenReader) ReadToken() ([]byte, error) {
-	return m.result, m.err
-}
+	token := []byte("token-test")
 
-func TestCreateVaultSourceWithTokenReaderAllOk(t *testing.T) {
-	token := []byte("my-token")
-	tr := &mockTokenReader{token, nil}
-	source, err := CreateVaultSourceWithTokenReader("prefix", tr)
+	if _, err := file.Write(token); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := file.Close(); err != nil {
+		log.Fatal(err)
+	}
+	client, err := CreateVaultClient(file.Name())
+
 	if err != nil {
 		t.Fatalf("Unexpected error creating vault source: %s", err.Error())
 	}
 
-	assert.NotNil(t, source)
+	assert.NotNil(t, client)
 }
 
-func TestCreateVaultSourceWithTokenReaderTokenIsEmpty(t *testing.T) {
+func TestCreateVaultClientTokenIsEmpty(t *testing.T) {
+	file, err := ioutil.TempFile("/tmp", "test-token-file")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(file.Name())
+
 	token := []byte("")
-	tr := &mockTokenReader{token, nil}
-	source, err := CreateVaultSourceWithTokenReader("prefix", tr)
+
+	if _, err := file.Write(token); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := file.Close(); err != nil {
+		log.Fatal(err)
+	}
+	client, err := CreateVaultClient(file.Name())
 
 	assert.EqualError(t, err, "Unable to fetch token from file")
-	assert.Nil(t, source)
+	assert.Nil(t, client)
 }
 
-func TestCreateVaultSourceWithTokenReaderError(t *testing.T) {
-	token := []byte("my-token")
-	tr := &mockTokenReader{token, errors.New("error reading token")}
-	source, err := CreateVaultSourceWithTokenReader("prefix", tr)
+func TestCreateVaultClientPathError(t *testing.T) {
+	client, err := CreateVaultClient("")
 
-	assert.EqualError(t, err, "error reading token")
-	assert.Nil(t, source)
+	assert.EqualError(t, err, "open : no such file or directory")
+	assert.Nil(t, client)
 }
 
-func TestCreateVaultSourceWithTokenReaderWrappedToken(t *testing.T) {
+func TestCreateVaultClientWrappedToken(t *testing.T) {
 	data := map[string]interface{}{
 		"token": "my-token",
 	}
+
+	file, err := ioutil.TempFile("/tmp", "test-token-file")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(file.Name())
 
 	teardownTest := setupTest(t)
 	defer teardownTest(t)
@@ -63,14 +84,21 @@ func TestCreateVaultSourceWithTokenReaderWrappedToken(t *testing.T) {
 	}
 
 	wtBytes, _ := json.Marshal(wrappedData.WrapInfo)
-	tr := &mockTokenReader{wtBytes, nil}
 
-	source, err := CreateVaultSourceWithTokenReader("prefix", tr)
+	if _, err := file.Write(wtBytes); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := file.Close(); err != nil {
+		log.Fatal(err)
+	}
+
+	client, err := CreateVaultClient(file.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.NotNil(t, source)
+	assert.NotNil(t, client)
 }
 
 func TestCreateVaultSourceFileInput(t *testing.T) {

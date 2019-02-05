@@ -10,29 +10,6 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
-type tokenReader interface {
-	ReadToken() ([]byte, error)
-}
-
-type fileTokenReader struct {
-	path string
-}
-
-func (f *fileTokenReader) ReadToken() ([]byte, error) {
-	tokenFile, err := os.Open(f.path)
-	if err != nil {
-		return nil, err
-	}
-	defer tokenFile.Close()
-
-	rawToken, err := ioutil.ReadAll(tokenFile)
-	if err != nil {
-		return nil, err
-	}
-
-	return rawToken, nil
-}
-
 type wrappedData struct {
 	Token           string `json:"token"`
 	Accessor        string `json:"accessor"`
@@ -42,28 +19,25 @@ type wrappedData struct {
 	WrappedAccessor string `json:"wrapped_accessor"`
 }
 
+// CreateVaultSource returns a vault source with a client associated to work with
 func CreateVaultSource(prefix string, fpath string) (source.Source, error) {
-	return CreateVaultSourceWithTokenReader(prefix, &fileTokenReader{path: fpath})
+	client, err := CreateVaultClient(fpath)
+	if err != nil {
+		return nil, err
+	}
+	return NewSource(Client(client), Prefix(prefix))
 }
 
-/**
-TODO:
-1) mover el codigo que lee de un fichero a una funcion a parte.
-2) leer sobre `interfaces` go
-3) crear una interfaz que defina una funcion que haga lo de 1)
-4) crear un `struct` que implemente esa funcion (la del paso 1)
-5) dependency injection golang
-*/
 // CreateVaultClient returns a Vault Client with a valid Token provided by the Vault Agent assigned to it.
 //
-// @fpath indicates the path of the file to read from. This file is where the token provided by the agent is supposed to be.
-func CreateVaultSourceWithTokenReader(prefix string, tr tokenReader) (source.Source, error) {
+// `fpath` indicates the path of the file to read from. This file is where the token provided by the agent is stored.
+func CreateVaultClient(fpath string) (*api.Client, error) {
 	client, err := api.NewClient(nil)
 	if err != nil {
 		return nil, err
 	}
 
-	rawToken, err := tr.ReadToken()
+	rawToken, err := ReadToken(fpath)
 	if err != nil {
 		return nil, err
 	}
@@ -102,5 +76,23 @@ func CreateVaultSourceWithTokenReader(prefix string, tr tokenReader) (source.Sou
 	}
 
 	client.SetToken(token)
-	return NewSource(Client(client), Prefix(prefix))
+	return client, nil
+}
+
+// ReadToken returns a byte array containing data from the designated file.
+//
+// `fpath` indicates the path where the file is located at.
+func ReadToken(fpath string) ([]byte, error) {
+	tokenFile, err := os.Open(fpath)
+	if err != nil {
+		return nil, err
+	}
+	defer tokenFile.Close()
+
+	rawToken, err := ioutil.ReadAll(tokenFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return rawToken, nil
 }
