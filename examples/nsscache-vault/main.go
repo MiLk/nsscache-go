@@ -23,7 +23,7 @@ func mainE() error {
 	}
 	defer os.Remove(file.Name())
 
-	token := []byte("token-test")
+	token := []byte(os.Getenv("VAULT_TOKEN"))
 
 	if _, err := file.Write(token); err != nil {
 		return err
