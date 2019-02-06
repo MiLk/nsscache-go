@@ -43,6 +43,10 @@ func CreateVaultClient(fpath string) (*api.Client, error) {
 		return nil, err
 	}
 
+	if len(rawToken) == 0 {
+		return nil, errors.New("Token file is empty")
+	}
+
 	var wrappedData wrappedData
 	var token string
 

@@ -53,7 +53,7 @@ func TestCreateVaultClientTokenIsEmpty(t *testing.T) {
 	}
 	client, err := CreateVaultClient(file.Name())
 
-	assert.EqualError(t, err, "Unable to fetch token from file")
+	assert.EqualError(t, err, "Token file is empty")
 	assert.Nil(t, client)
 }
 
