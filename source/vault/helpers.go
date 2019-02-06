@@ -6,8 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/MiLk/nsscache-go/source"
 	"github.com/hashicorp/vault/api"
+
+	"github.com/MiLk/nsscache-go/source"
 )
 
 type wrappedData struct {
@@ -46,27 +47,31 @@ func CreateVaultClient(fpath string) (*api.Client, error) {
 	var token string
 
 	// Check if the token has been stored in JSON format (wrapped token) or as a plain string
-	if err := json.Unmarshal(rawToken, &wrappedData); err == nil {
-		unwrapToken := wrappedData.Token
-		if unwrapToken == "" {
-			return nil, errors.New("Unwrap token is empty")
-		}
+	if rawToken[0] == '{' {
+		if err := json.Unmarshal(rawToken, &wrappedData); err == nil {
+			unwrapToken := wrappedData.Token
+			if unwrapToken == "" {
+				return nil, errors.New("Unwrap token is empty")
+			}
 
-		secret, err := client.Logical().Unwrap(unwrapToken)
-		if err != nil {
+			secret, err := client.Logical().Unwrap(unwrapToken)
+			if err != nil {
+				return nil, err
+			}
+
+			if secret == nil {
+				return nil, errors.New("Could not find wrapped response")
+			}
+
+			dataToken, ok := secret.Data["token"].(string)
+			if !ok {
+				return nil, errors.New("Key `token` was not found on the unwrapped data")
+			}
+
+			token = dataToken
+		} else {
 			return nil, err
 		}
-
-		if secret == nil {
-			return nil, errors.New("Could not find wrapped response")
-		}
-
-		dataToken, ok := secret.Data["token"].(string)
-		if !ok {
-			return nil, errors.New("Key `token` was not found on the unwrapped data")
-		}
-
-		token = dataToken
 	} else {
 		token = string(rawToken)
 	}

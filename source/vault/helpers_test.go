@@ -66,7 +66,7 @@ func TestCreateVaultClientPathError(t *testing.T) {
 
 func TestCreateVaultClientWrappedToken(t *testing.T) {
 	data := map[string]interface{}{
-		"token": "my-token",
+		"token": "another-test-token",
 	}
 
 	file, err := ioutil.TempFile("/tmp", "test-token-file")
