@@ -101,3 +101,36 @@ func TestCache_WriteTo(t *testing.T) {
 	_, err := c.WriteTo(w)
 	assert.NotNil(t, err)
 }
+
+func TestCacheIndex(t *testing.T) {
+	c := NewCache()
+	c.Add(&PasswdEntry{
+		Name:   "foo",
+		Passwd: "x",
+		UID:    1000,
+		GID:    1000,
+		GECOS:  "Mr Foo",
+		Dir:    "/home/foo",
+		Shell:  "/bin/bash",
+	}, &PasswdEntry{
+		Name:   "admin",
+		Passwd: "x",
+		UID:    1002,
+		GID:    1000,
+		GECOS:  "Admin",
+		Dir:    "/home/admin",
+		Shell:  "/bin/bash",
+	}, &PasswdEntry{
+		Name:   "bar",
+		Passwd: "x",
+		UID:    1001,
+		GID:    1000,
+		GECOS:  "Mrs Bar",
+		Dir:    "/home/bar",
+		Shell:  "/bin/bash",
+	})
+
+	idx := c.Index(0)
+	expected := []byte{97, 100, 109, 105, 110, 0, 48, 48, 48, 48, 48, 48, 48, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 98, 97, 114, 0, 48, 48, 48, 48, 48, 48, 52, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 102, 111, 111, 0, 48, 48, 48, 48, 48, 48, 57, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10}
+	assert.Equal(t, expected, idx.Bytes())
+}

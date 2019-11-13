@@ -9,6 +9,8 @@ import (
 type Entry interface {
 	fmt.Stringer
 	io.WriterTo
+
+	Column(int) string
 }
 
 // PasswdEntry describes an entry of the /etc/passwd file
@@ -41,6 +43,19 @@ func (e *PasswdEntry) args() []interface{} {
 		e.GECOS,
 		e.Dir,
 		e.Shell,
+	}
+}
+
+// Column returns the information from the requested columns or an
+// empty string if no column is known.
+func (e *PasswdEntry) Column(col int) string {
+	switch col {
+	case 0:
+		return e.Name
+	case 2:
+		return fmt.Sprintf("%d", e.UID)
+	default:
+		return ""
 	}
 }
 
@@ -89,6 +104,17 @@ func (e *ShadowEntry) args() []interface{} {
 	}
 }
 
+// Column returns the information from the requested columns or an
+// empty string if no column is known.
+func (e *ShadowEntry) Column(col int) string {
+	switch col {
+	case 0:
+		return e.Name
+	default:
+		return ""
+	}
+}
+
 func (e *ShadowEntry) String() string {
 	return fmt.Sprintf(e.format(), e.args()...)
 }
@@ -121,6 +147,19 @@ func (e *GroupEntry) args() []interface{} {
 		e.Passwd,
 		e.GID,
 		strings.Join(e.Mem, ","),
+	}
+}
+
+// Column returns the information from the requested columns or an
+// empty string if no column is known.
+func (e *GroupEntry) Column(col int) string {
+	switch col {
+	case 0:
+		return e.Name
+	case 2:
+		return fmt.Sprintf("%d", e.GID)
+	default:
+		return ""
 	}
 }
 

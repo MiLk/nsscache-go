@@ -36,6 +36,21 @@ func TestPasswdEntry_WriteTo(t *testing.T) {
 	assert.Equal(t, expected, b.String())
 }
 
+func TestPasswdEntry_Column(t *testing.T) {
+	e := PasswdEntry{
+		Name:  "foo",
+		UID:   1000,
+		GID:   1000,
+		GECOS: "Mr Foo",
+		Dir:   "/home/foo",
+		Shell: "/usr/bin/bash",
+	}
+
+	assert.Equal(t, "foo", e.Column(0))
+	assert.Equal(t, "1000", e.Column(2))
+	assert.Equal(t, "", e.Column(1))
+}
+
 func TestShadowEntry_String(t *testing.T) {
 	e := ShadowEntry{
 		Name: "foo",
@@ -56,6 +71,14 @@ func TestShadowEntry_WriteTo(t *testing.T) {
 	assert.Equal(t, expected, b.String())
 }
 
+func TestShadowEntry_Column(t *testing.T) {
+	e := ShadowEntry{
+		Name: "foo",
+	}
+	assert.Equal(t, "foo", e.Column(0))
+	assert.Equal(t, "", e.Column(1))
+}
+
 func TestGroupEntry_String(t *testing.T) {
 	e := GroupEntry{
 		Name: "foo",
@@ -74,6 +97,16 @@ func TestGroupEntry_WriteTo(t *testing.T) {
 	var b bytes.Buffer
 	assert.Nil(t, writerToError(e.WriteTo(&b)))
 	assert.Equal(t, expected, b.String())
+}
+
+func TestGroupEntry_Column(t *testing.T) {
+	e := GroupEntry{
+		Name: "foo",
+		GID:  1000,
+	}
+	assert.Equal(t, "foo", e.Column(0))
+	assert.Equal(t, "1000", e.Column(2))
+	assert.Equal(t, "", e.Column(1))
 }
 
 func writerToError(i int64, e error) error {
