@@ -37,9 +37,9 @@ func CreateMockS3GetObjectClient(resp string, err error) *MockS3GetObject {
 	}
 }
 
-func TestCreateS3Source(t *testing.T) {
+func TestCreateSource(t *testing.T) {
 	svc := CreateMockS3GetObjectClient("", nil)
-	src := CreateS3Source(svc, "prefix", "bucket")
+	src := CreateSource(svc, "prefix", "bucket")
 	assert.NotNil(t, src)
 }
 

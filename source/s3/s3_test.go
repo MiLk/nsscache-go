@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestS3Source_FillPasswdCache_OK(t *testing.T) {
+func TestSource_FillPasswdCache_OK(t *testing.T) {
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
@@ -37,7 +37,7 @@ func TestS3Source_FillPasswdCache_OK(t *testing.T) {
 }]`
 	svc := CreateMockS3GetObjectClient(r, nil)
 	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
-	src := CreateS3Source(svc, prefix, "testing-bucket")
+	src := CreateSource(svc, prefix, "testing-bucket")
 	c := cache.NewCache()
 
 	assert.Nil(t, src.FillPasswdCache(c))
@@ -53,7 +53,7 @@ var:x:1001:1000:Mr Var:/home/var:/bin/bash
 	assert.Equal(t, expected, b.String())
 }
 
-func TestS3Source_FillPasswdCache_JSONDecodingError(t *testing.T) {
+func TestSource_FillPasswdCache_JSONDecodingError(t *testing.T) {
 	// json decoding error
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
@@ -70,7 +70,7 @@ func TestS3Source_FillPasswdCache_JSONDecodingError(t *testing.T) {
 }]`
 	svc := CreateMockS3GetObjectClient(r, nil)
 	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
-	src := CreateS3Source(svc, prefix, "testing-bucket")
+	src := CreateSource(svc, prefix, "testing-bucket")
 	c := cache.NewCache()
 
 	err = src.FillPasswdCache(c)
@@ -78,7 +78,7 @@ func TestS3Source_FillPasswdCache_JSONDecodingError(t *testing.T) {
 	assert.Equal(t, expectedErr, err.Error())
 }
 
-func TestS3Source_FillPasswdCache_BadEntryFormat(t *testing.T) {
+func TestSource_FillPasswdCache_BadEntryFormat(t *testing.T) {
 	// json does not match entry format
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
@@ -95,7 +95,7 @@ func TestS3Source_FillPasswdCache_BadEntryFormat(t *testing.T) {
 }]`
 	svc := CreateMockS3GetObjectClient(r, nil)
 	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
-	src := CreateS3Source(svc, prefix, "testing-bucket")
+	src := CreateSource(svc, prefix, "testing-bucket")
 	c := cache.NewCache()
 
 	err = src.FillPasswdCache(c)
@@ -103,7 +103,7 @@ func TestS3Source_FillPasswdCache_BadEntryFormat(t *testing.T) {
 	assert.Equal(t, expectedErr, err.Error())
 }
 
-func TestS3Source_FillPasswdCache_DownloadError(t *testing.T) {
+func TestSource_FillPasswdCache_DownloadError(t *testing.T) {
 	// error downloading from s3
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
@@ -120,7 +120,7 @@ func TestS3Source_FillPasswdCache_DownloadError(t *testing.T) {
 }]`
 	svc := CreateMockS3GetObjectClient(r, errors.New("some error"))
 	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
-	src := CreateS3Source(svc, prefix, "testing-bucket")
+	src := CreateSource(svc, prefix, "testing-bucket")
 	c := cache.NewCache()
 
 	err = src.FillPasswdCache(c)
@@ -128,7 +128,7 @@ func TestS3Source_FillPasswdCache_DownloadError(t *testing.T) {
 	assert.Equal(t, expectedErr, err.Error())
 }
 
-func TestS3Source_FillShadowCache_OK(t *testing.T) {
+func TestSource_FillShadowCache_OK(t *testing.T) {
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
@@ -143,7 +143,7 @@ func TestS3Source_FillShadowCache_OK(t *testing.T) {
 
 	svc := CreateMockS3GetObjectClient(r, nil)
 	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
-	src := CreateS3Source(svc, prefix, "testing-bucket")
+	src := CreateSource(svc, prefix, "testing-bucket")
 	c := cache.NewCache()
 
 	assert.Nil(t, src.FillShadowCache(c))
@@ -156,7 +156,7 @@ func TestS3Source_FillShadowCache_OK(t *testing.T) {
 	assert.Equal(t, "foo:123!!:1000::23:::44:\n", b.String())
 }
 
-func TestS3Source_FillGroupCache_OK(t *testing.T) {
+func TestSource_FillGroupCache_OK(t *testing.T) {
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
@@ -170,7 +170,7 @@ func TestS3Source_FillGroupCache_OK(t *testing.T) {
 
 	svc := CreateMockS3GetObjectClient(r, nil)
 	prefix := fmt.Sprintf("secret/%s", "nsscache-test")
-	src := CreateS3Source(svc, prefix, "testing-bucket")
+	src := CreateSource(svc, prefix, "testing-bucket")
 	c := cache.NewCache()
 
 	assert.Nil(t, src.FillGroupCache(c))

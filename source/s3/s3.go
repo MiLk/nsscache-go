@@ -11,27 +11,28 @@ import (
 )
 
 /*
-S3Source describes a source.Source for S3 backends:
+Source describes a source.Source for S3 backends:
   - prefix: the path within the S3 bucket to the passwd, shadow and group files
   - bucket: the name of the S3 bucket
   - client: the S3 client
 */
-type S3Source struct {
+type Source struct {
 	prefix string
 	bucket string
 	client s3iface.S3API
 }
 
-// CreateS3Source returns a new Source for fetching data from S3 backends
-func CreateS3Source(client s3iface.S3API, prefix string, bucket string) source.Source {
-	return &S3Source{
+// CreateSource returns a new Source for fetching data from S3
+// backends.
+func CreateSource(client s3iface.S3API, prefix string, bucket string) source.Source {
+	return &Source{
 		client: client,
 		prefix: prefix,
 		bucket: bucket,
 	}
 }
 
-func (s *S3Source) run(key string, c *cache.Cache, createEntry func() cache.Entry) error {
+func (s *Source) run(key string, c *cache.Cache, createEntry func() cache.Entry) error {
 	if s.prefix != "" {
 		key = fmt.Sprintf("%s/%s", s.prefix, key)
 	}
@@ -61,22 +62,25 @@ func (s *S3Source) run(key string, c *cache.Cache, createEntry func() cache.Entr
 	return nil
 }
 
-// FillPasswdCache downloads shadow file from S3, parses the JSON and writes the passwd NSS cache file to disk.
-func (s *S3Source) FillPasswdCache(c *cache.Cache) error {
+// FillPasswdCache downloads shadow file from S3, parses the JSON and
+// writes the passwd NSS cache file to disk.
+func (s *Source) FillPasswdCache(c *cache.Cache) error {
 	return s.run("passwd", c, func() cache.Entry {
 		return &cache.PasswdEntry{}
 	})
 }
 
-// FillShadowCache downloads shadow file from S3, parses the JSON and writes the shadow NSS cache file to disk.
-func (s *S3Source) FillShadowCache(c *cache.Cache) error {
+// FillShadowCache downloads shadow file from S3, parses the JSON and
+// writes the shadow NSS cache file to disk.
+func (s *Source) FillShadowCache(c *cache.Cache) error {
 	return s.run("shadow", c, func() cache.Entry {
 		return &cache.ShadowEntry{}
 	})
 }
 
-// FillGroupCache downloads shadow file from S3, parses the JSON and writes the group NSS cache file to disk.
-func (s *S3Source) FillGroupCache(c *cache.Cache) error {
+// FillGroupCache downloads shadow file from S3, parses the JSON and
+// writes the group NSS cache file to disk.
+func (s *Source) FillGroupCache(c *cache.Cache) error {
 	return s.run("group", c, func() cache.Entry {
 		return &cache.GroupEntry{}
 	})
