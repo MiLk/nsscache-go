@@ -54,7 +54,7 @@ func (s *testSource) FillPasswdCache(c *cache.Cache) error {
 }
 
 func (s *testSource) FillShadowCache(c *cache.Cache) error {
-	lstchg := int32(time.Now().Sub(time.Unix(0, 0)).Hours() / 24)
+	lstchg := int32(time.Since(time.Unix(0, 0)).Hours() / 24)
 	c.Add(
 		&cache.ShadowEntry{
 			Name:   "foo",
@@ -148,7 +148,7 @@ func TestCacheMap_WriteFiles(t *testing.T) {
 	// On non-linux platforms, the permissions are wrong due to how docker share the volume
 	if runtime.GOOS == "linux" {
 		res, err = Getent(dir, "shadow", "foo")
-		lstchg := int32(time.Now().Sub(time.Unix(0, 0)).Hours() / 24)
+		lstchg := int32(time.Since(time.Unix(0, 0)).Hours() / 24)
 		assert.Nil(t, err)
 		assert.Equal(t, fmt.Sprintf("foo:!!:%d::::::\n", lstchg), string(res))
 	}
@@ -238,7 +238,7 @@ func TestNewCaches(t *testing.T) {
 	b.Reset()
 	_, err = m["shadow"].WriteTo(&b)
 	assert.Nil(t, err)
-	lstchg := int32(time.Now().Sub(time.Unix(0, 0)).Hours() / 24)
+	lstchg := int32(time.Since(time.Unix(0, 0)).Hours() / 24)
 	assert.Equal(t, fmt.Sprintf("admin:!!:%d::::::\n", lstchg), b.String())
 
 	b.Reset()
