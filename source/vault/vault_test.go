@@ -77,7 +77,7 @@ func TestNewSource(t *testing.T) {
 	os.Unsetenv("VAULT_SKIP_VERIFY")
 }
 
-func TestVaultSource_FillPasswdCache(t *testing.T) {
+func TestSource_FillPasswdCache(t *testing.T) {
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
@@ -158,7 +158,7 @@ foo:x:1000:1000:Mr Foo:/home/foo:/bin/bash
 	assert.Equal(t, "", b.String())
 }
 
-func TestVaultSource_FillShadowCache(t *testing.T) {
+func TestSource_FillShadowCache(t *testing.T) {
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
@@ -197,7 +197,7 @@ foo:!!:17321::::::
 	assert.Equal(t, expected, b.String())
 }
 
-func TestVaultSource_FillGroupCache(t *testing.T) {
+func TestSource_FillGroupCache(t *testing.T) {
 	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
@@ -233,7 +233,7 @@ func TestVaultSource_FillGroupCache(t *testing.T) {
 	assert.Equal(t, expected, b.String())
 }
 
-func TestVaultSource_List(t *testing.T) {
+func TestSource_List(t *testing.T) {
 	s, err := NewSource()
 	assert.Nil(t, err)
 	err = s.list("name", nil, nil)

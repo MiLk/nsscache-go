@@ -20,8 +20,8 @@ type wrappedData struct {
 	WrappedAccessor string `json:"wrapped_accessor"`
 }
 
-// CreateVaultSource returns a vault source with a client associated to work with
-func CreateVaultSource(prefix string, fpath string) (source.Source, error) {
+// CreateSource returns a vault source with a client associated to work with
+func CreateSource(prefix string, fpath string) (source.Source, error) {
 	client, err := CreateVaultClient(fpath)
 	if err != nil {
 		return nil, err
