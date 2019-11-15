@@ -14,26 +14,39 @@ import (
 	"github.com/MiLk/nsscache-go/cache"
 )
 
+// Source contains the Vault API client and complete path to the cache
+// data within the vault.
 type Source struct {
 	client    *api.Client
 	prefix    string
 	mountPath string
 }
 
+// Option represents a function which will make some change to the
+// source during initialization.
 type Option func(*Source)
 
+// Client is an option function which will set the source's client to
+// the one that is provided.
 func Client(c *api.Client) Option {
 	return func(s *Source) { s.client = c }
 }
 
+// Prefix is an option function which will set the source's prefix to
+// the value provided.
 func Prefix(p string) Option {
 	return func(s *Source) { s.prefix = p }
 }
 
+// MountPath is an option function which will set the source's
+// mountpath for the key/value store to the one provided.
 func MountPath(m string) Option {
 	return func(s *Source) { s.mountPath = m }
 }
 
+// NewSource creates a new Vault source using the options provided.
+// If no options are provided a client is initialized with the default
+// values.
 func NewSource(opts ...Option) (*Source, error) {
 	s := Source{
 		prefix:    "nsscache",
@@ -55,6 +68,8 @@ func NewSource(opts ...Option) (*Source, error) {
 	return &s, nil
 }
 
+// Client is a convenience function to retrieve the Vault API client
+// from the source.
 func (s *Source) Client() *api.Client {
 	return s.client
 }
@@ -90,18 +105,24 @@ func (s *Source) list(name string, c *cache.Cache, createEntry func() cache.Entr
 	return nil
 }
 
+// FillPasswdCache reads entries from the Vault and uses them to fill
+// the passwd cache.
 func (s *Source) FillPasswdCache(c *cache.Cache) error {
 	return s.list("passwd", c, func() cache.Entry {
 		return &cache.PasswdEntry{}
 	})
 }
 
+// FillShadowCache reads entries from the Vault and uses them to fill
+// the shadow cache.
 func (s *Source) FillShadowCache(c *cache.Cache) error {
 	return s.list("shadow", c, func() cache.Entry {
 		return &cache.ShadowEntry{}
 	})
 }
 
+// FillGroupCache reads entries from the Vault and uses them to fill
+// the group cache.
 func (s *Source) FillGroupCache(c *cache.Cache) error {
 	return s.list("group", c, func() cache.Entry {
 		return &cache.GroupEntry{}
