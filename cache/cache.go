@@ -2,7 +2,10 @@
 package cache
 
 import (
+	"bytes"
+	"fmt"
 	"io"
+	"sort"
 )
 
 type ACL func(e Entry) bool
@@ -56,4 +59,35 @@ func (c *Cache) WriteTo(w io.Writer) (int64, error) {
 		}
 	}
 	return total, nil
+}
+
+// Index generates an index for the given cache on a particular
+// column.  This is required for caches beyond a libnss-cache defined
+// size in order for them to be read correctly.
+func (c *Cache) Index(col int) bytes.Buffer {
+	ordered := make([]string, len(c.entries))
+	mapped := make(map[string]Entry, len(c.entries))
+	for i := range c.entries {
+		key := c.entries[i].Column(col)
+		ordered[i] = key
+		mapped[key] = c.entries[i]
+	}
+
+	// libnss-cache depends on the indexes being ordered in order
+	// to accelerate the system with a binary search.
+	sort.Strings(ordered)
+
+	var b bytes.Buffer
+	var offset int64
+	for _, key := range ordered {
+		b.WriteString(key)
+		b.WriteByte(0)
+		fmt.Fprintf(&b, "%08d", offset)
+		for i := 0; i < 32-len(key)-1; i++ {
+			b.WriteByte(0)
+		}
+		b.WriteString("\n")
+		offset += int64(len(mapped[key].String())) + 1
+	}
+	return b
 }

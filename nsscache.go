@@ -3,7 +3,7 @@ package nsscache
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 
 	"os"
 
@@ -75,7 +75,8 @@ func defaultWriteOptions() WriteOptions {
 	}
 }
 
-// WriteFiles write the content of the cache structs into files that libnss-cache can read
+// WriteFiles write the content of the cache structs into files that
+// libnss-cache can read.
 func (cm *CacheMap) WriteFiles(options *WriteOptions) error {
 	wo := defaultWriteOptions()
 	if options != nil {
@@ -88,12 +89,32 @@ func (cm *CacheMap) WriteFiles(options *WriteOptions) error {
 	}
 
 	for _, name := range []string{"passwd", "shadow", "group"} {
-		filepath := path.Join(wo.Directory, fmt.Sprintf("%s.%s", name, wo.Extension))
+		fpath := filepath.Join(wo.Directory, fmt.Sprintf("%s.%s", name, wo.Extension))
 		mode := 0644
 		if name == "shadow" {
 			mode = 0000
 		}
-		if err := WriteAtomic(filepath, (*cm)[name], os.FileMode(mode)); err != nil {
+		if err := WriteAtomic(fpath, (*cm)[name], os.FileMode(mode)); err != nil {
+			return err
+		}
+	}
+
+	idxCfg := []struct {
+		cache  string
+		column int
+		supext string
+	}{
+		{"passwd", 0, "ixname"},
+		{"passwd", 2, "ixuid"},
+		{"group", 0, "ixname"},
+		{"group", 2, "ixgid"},
+		{"shadow", 0, "ixname"},
+	}
+
+	for _, idx := range idxCfg {
+		fpath := filepath.Join(wo.Directory, fmt.Sprintf("%s.%s.%s", idx.cache, wo.Extension, idx.supext))
+		idx := (*cm)[idx.cache].Index(idx.column)
+		if err := WriteAtomic(fpath, &idx, os.FileMode(0644)); err != nil {
 			return err
 		}
 	}
