@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// Entry specifies a generic entry in an unspecified cache.  Specific
+// implementations are provided for passwd, group, and shadow caches.
 type Entry interface {
 	fmt.Stringer
 	io.WriterTo
@@ -15,7 +17,7 @@ type Entry interface {
 
 // PasswdEntry describes an entry of the /etc/passwd file
 // https://sourceware.org/git/?p=glibc.git;a=blob;f=pwd/pwd.h;hb=HEAD#l49
-// https://fossies.org/dox/glibc-2.25/structpasswd.html
+// https://fossies.org/dox/glibc-2.30/structpasswd.html
 type PasswdEntry struct {
 	Name   string `json:"name"`   // Username
 	Passwd string `json:"passwd"` // Password
@@ -63,13 +65,14 @@ func (e *PasswdEntry) String() string {
 	return fmt.Sprintf(e.format(), e.args()...)
 }
 
+// WriteTo writes the specified entry to the provided writer.
 func (e *PasswdEntry) WriteTo(w io.Writer) (int64, error) {
 	return toInt64(fmt.Fprintf(w, e.format(), e.args()...))
 }
 
 // ShadowEntry describes an entry of the /etc/shadow file
 // https://sourceware.org/git/?p=glibc.git;a=blob;f=shadow/shadow.h;hb=HEAD#l39
-// https://fossies.org/dox/glibc-2.25/structspwd.htmls
+// https://fossies.org/dox/glibc-2.30/structspwd.htmls
 type ShadowEntry struct {
 	Name   string     `json:"name"`             // Login name
 	Passwd string     `json:"passwd"`           // Encrypted password
@@ -119,13 +122,14 @@ func (e *ShadowEntry) String() string {
 	return fmt.Sprintf(e.format(), e.args()...)
 }
 
+// WriteTo writes the specified entry to the provided writer.
 func (e *ShadowEntry) WriteTo(w io.Writer) (int64, error) {
 	return toInt64(fmt.Fprintf(w, e.format(), e.args()...))
 }
 
 // GroupEntry describes an entry of the /etc/group file
 // https://sourceware.org/git/?p=glibc.git;a=blob;f=grp/grp.h;hb=HEAD#l41
-// https://fossies.org/dox/glibc-2.25/structgroup.html
+// https://fossies.org/dox/glibc-2.30/structgroup.html
 type GroupEntry struct {
 	Name   string   `json:"name"`   // Group name
 	Passwd string   `json:"passwd"` // Password
@@ -167,6 +171,7 @@ func (e *GroupEntry) String() string {
 	return fmt.Sprintf(e.format(), e.args()...)
 }
 
+// WriteTo writes the specified entry to the provided writer.
 func (e *GroupEntry) WriteTo(w io.Writer) (int64, error) {
 	return toInt64(fmt.Fprintf(w, e.format(), e.args()...))
 }
