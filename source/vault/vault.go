@@ -1,4 +1,5 @@
-// vault is an implementation of a source using Hashicorp Vault to store the data
+// Package vault is a source implementation that retrieves cache data
+// from a path in a Hashicorp Vault key/value store.
 package vault
 
 import (
