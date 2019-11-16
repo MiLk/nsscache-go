@@ -79,28 +79,37 @@ func (c *Cache) WriteTo(w io.Writer) (int64, error) {
 // size in order for them to be read correctly.
 func (c *Cache) Index(col int) bytes.Buffer {
 	ordered := make([]string, len(c.entries))
-	mapped := make(map[string]Entry, len(c.entries))
+	offsets := make(map[string]string, len(c.entries))
+	offset := 0
+	keyLen, posLen := 0, 0
 	for i := range c.entries {
 		key := c.entries[i].Column(col)
+		if len(key) > keyLen {
+			keyLen = len(key)
+		}
+		posStr := fmt.Sprintf("%d", offset)
+		if len(posStr) > posLen {
+			posLen = len(posStr)
+		}
 		ordered[i] = key
-		mapped[key] = c.entries[i]
+		offsets[key] = posStr
+		offset += len(c.entries[i].String())
 	}
+	maxLen := keyLen + posLen
 
 	// libnss-cache depends on the indexes being ordered in order
 	// to accelerate the system with a binary search.
 	sort.Strings(ordered)
 
 	var b bytes.Buffer
-	var offset int64
 	for _, key := range ordered {
 		b.WriteString(key)
 		b.WriteByte(0)
-		fmt.Fprintf(&b, "%08d", offset)
-		for i := 0; i < 32-len(key)-1; i++ {
+		b.WriteString(offsets[key])
+		for i := 0; i < maxLen-len(key)-len(offsets[key]); i++ {
 			b.WriteByte(0)
 		}
 		b.WriteString("\n")
-		offset += int64(len(mapped[key].String())) + 1
 	}
 	return b
 }
