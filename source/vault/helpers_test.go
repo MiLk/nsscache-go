@@ -53,7 +53,7 @@ func TestCreateVaultClientTokenIsEmpty(t *testing.T) {
 	}
 	client, err := CreateVaultClient(file.Name())
 
-	assert.EqualError(t, err, "Token file is empty")
+	assert.EqualError(t, err, "token file is empty")
 	assert.Nil(t, client)
 }
 
@@ -101,7 +101,7 @@ func TestCreateVaultClientWrappedToken(t *testing.T) {
 	assert.NotNil(t, client)
 }
 
-func TestCreateVaultSourceFileInput(t *testing.T) {
+func TestCreateSourceFileInput(t *testing.T) {
 	file, err := ioutil.TempFile("/tmp", "test-token-file")
 	if err != nil {
 		t.Fatal(err)
@@ -118,7 +118,7 @@ func TestCreateVaultSourceFileInput(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	source, err := CreateVaultSource("prefix", file.Name())
+	source, err := CreateSource("prefix", file.Name())
 	if err != nil {
 		t.Fatalf("Unexpected error creating vault source: %s", err.Error())
 	}

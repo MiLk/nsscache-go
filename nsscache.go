@@ -1,4 +1,7 @@
-// nsscache allows you to write programs which will populate the cache files used by libnss-cache
+// Package nsscache greatly simplifies the task of writing cache
+// filling applications for libnss-cache by encapsulating the tasks of
+// writing the caches, cache indexes, and doing so atomically into a
+// reusable library.
 package nsscache
 
 import (
@@ -11,15 +14,17 @@ import (
 	"github.com/MiLk/nsscache-go/source"
 )
 
-// CacheMap allows you to manage the caches as a group
+// CacheMap allows you to manage the caches as a group.
 type CacheMap map[string]*cache.Cache
 
+// Option is a wrapper type used to specify options on a specific
+// cache.
 type Option struct {
 	CacheName string
 	Option    cache.Option
 }
 
-// NewCaches creates cache structs for passwd, group and shadow
+// NewCaches creates cache structs for passwd, group and shadow.
 func NewCaches(opts ...Option) CacheMap {
 	optionMap := map[string][]cache.Option{}
 	for _, opt := range opts {
@@ -40,7 +45,8 @@ func NewCaches(opts ...Option) CacheMap {
 	return m
 }
 
-// FillCaches uses the provided source to fill the caches of the CacheMap struct
+// FillCaches uses the provided source to fill the caches of the
+// CacheMap struct.
 func (cm *CacheMap) FillCaches(src source.Source) error {
 	if c, ok := (*cm)["passwd"]; ok {
 		if err := src.FillPasswdCache(c); err != nil {
@@ -63,6 +69,9 @@ func (cm *CacheMap) FillCaches(src source.Source) error {
 	return nil
 }
 
+// WriteOptions specifies optional values for writing the caches out.
+// The directory will default to '/etc' and the Extension will default
+// to 'cache'.
 type WriteOptions struct {
 	Directory string
 	Extension string

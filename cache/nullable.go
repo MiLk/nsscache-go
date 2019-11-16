@@ -18,6 +18,8 @@ func (n *nullInt32) String() string {
 	return fmt.Sprintf("%d", n.val)
 }
 
+// Int32 converts the provided int32 into a valid nullInt32 which has
+// more desireable JSON properties.
 func Int32(v int32) nullInt32 {
 	return nullInt32{
 		val:   v,
@@ -60,6 +62,8 @@ func (n *nullUInt32) String() string {
 	return fmt.Sprintf("%d", n.val)
 }
 
+// UInt32 converts the provided uint32 into a valid nullUInt32 which
+// has more desireable JSON properties.
 func UInt32(v uint32) nullUInt32 {
 	return nullUInt32{
 		val:   v,

@@ -20,8 +20,8 @@ type wrappedData struct {
 	WrappedAccessor string `json:"wrapped_accessor"`
 }
 
-// CreateVaultSource returns a vault source with a client associated to work with
-func CreateVaultSource(prefix string, fpath string) (source.Source, error) {
+// CreateSource returns a vault source with a client associated to work with
+func CreateSource(prefix string, fpath string) (source.Source, error) {
 	client, err := CreateVaultClient(fpath)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func CreateVaultClient(fpath string) (*api.Client, error) {
 	}
 
 	if len(rawToken) == 0 {
-		return nil, errors.New("Token file is empty")
+		return nil, errors.New("token file is empty")
 	}
 
 	var wrappedData wrappedData
@@ -55,7 +55,7 @@ func CreateVaultClient(fpath string) (*api.Client, error) {
 		if err := json.Unmarshal(rawToken, &wrappedData); err == nil {
 			unwrapToken := wrappedData.Token
 			if unwrapToken == "" {
-				return nil, errors.New("Unwrap token is empty")
+				return nil, errors.New("unwrap token is empty")
 			}
 
 			secret, err := client.Logical().Unwrap(unwrapToken)
@@ -64,12 +64,12 @@ func CreateVaultClient(fpath string) (*api.Client, error) {
 			}
 
 			if secret == nil {
-				return nil, errors.New("Could not find wrapped response")
+				return nil, errors.New("could not find wrapped response")
 			}
 
 			dataToken, ok := secret.Data["token"].(string)
 			if !ok {
-				return nil, errors.New("Key `token` was not found on the unwrapped data")
+				return nil, errors.New("key `token` was not found on the unwrapped data")
 			}
 
 			token = dataToken
@@ -81,7 +81,7 @@ func CreateVaultClient(fpath string) (*api.Client, error) {
 	}
 
 	if token == "" {
-		return nil, errors.New("Unable to fetch token from file")
+		return nil, errors.New("unable to fetch token from file")
 	}
 
 	client.SetToken(token)

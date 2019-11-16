@@ -23,8 +23,8 @@ func setupVault(t *testing.T) (net.Listener, error) {
 
 func TestMainE(t *testing.T) {
 	ln, err := setupVault(t)
-	defer ln.Close()
 	assert.Nil(t, err)
+	defer ln.Close()
 
 	assert.Nil(t, mainE())
 

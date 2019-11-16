@@ -1,4 +1,7 @@
-// cache contains the struct to manipulate the cache data in memory before writing to the disk
+// Package cache contains the types and convenience functions for
+// manipulating caches in memory prior to writing to the disk.  All
+// caches act on Entries which may refer to passwd, group, or shadow
+// cache entries.
 package cache
 
 import (
@@ -8,14 +11,23 @@ import (
 	"sort"
 )
 
+// ACL specifies a function which will return true if the entry is
+// permitted by the ACL.  If the entry is not permitted by the ACL it
+// will silently be discarted.
 type ACL func(e Entry) bool
 
+// Option is a type of pre-processing function which can be used to
+// pre-set values on a cache.
 type Option func(c *Cache)
 
+// WithACL is a convenience function to obtain an Option function for
+// the specified ACL function.
 func WithACL(a ACL) Option {
 	return func(c *Cache) { c.acls = append(c.acls, a) }
 }
 
+// NewCache returns a new cache struct initialized with any provided
+// options.
 func NewCache(opts ...Option) *Cache {
 	c := Cache{}
 	for _, opt := range opts {
@@ -24,20 +36,21 @@ func NewCache(opts ...Option) *Cache {
 	return &c
 }
 
-// Cache is an in-memory struct representing the cache to be used by libnss-cache
+// Cache is an in-memory struct representing the cache to be used by
+// libnss-cache.
 type Cache struct {
 	entries []Entry // Entries contained in the cache
 	acls    []ACL
 }
 
-// Add adds new entries to the cache
+// Add adds new entries to the cache.
 func (c *Cache) Add(es ...Entry) {
 	for _, e := range es {
 		c.addOne(e)
 	}
 }
 
-// addOne adds a new entry to the cache
+// addOne adds a new entry to the cache.
 func (c *Cache) addOne(e Entry) {
 	for _, acl := range c.acls {
 		if !acl(e) {
@@ -48,15 +61,15 @@ func (c *Cache) addOne(e Entry) {
 	c.entries = append(c.entries, e)
 }
 
-// WriteTo writes the content of the cache to an io.Writer
+// WriteTo writes the content of the cache to an io.Writer.
 func (c *Cache) WriteTo(w io.Writer) (int64, error) {
 	total := int64(0)
 	for _, e := range c.entries {
-		if n, err := e.WriteTo(w); err != nil {
+		n, err := e.WriteTo(w)
+		if err != nil {
 			return total + n, err
-		} else {
-			total += n
 		}
+		total += n
 	}
 	return total, nil
 }

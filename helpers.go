@@ -7,7 +7,10 @@ import (
 	"path"
 )
 
-// Write file to temp and atomically move when everything else succeeds.
+// WriteAtomic allows atomic updates to files by first writing to a
+// temporary file, setting all parameters on the temporary file and
+// renaming it to the desired name.  On most Linux systems this will
+// be an atomic action.
 func WriteAtomic(filename string, wt io.WriterTo, perm os.FileMode) error {
 	dir, name := path.Split(filename)
 	f, err := ioutil.TempFile(dir, name)

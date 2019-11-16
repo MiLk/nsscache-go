@@ -6,7 +6,7 @@ import (
 	"os"
 
 	nsscache "github.com/MiLk/nsscache-go"
-	vaultsource "github.com/MiLk/nsscache-go/source/vault"
+	"github.com/MiLk/nsscache-go/source/vault"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func mainE() error {
 		return err
 	}
 
-	src, err := vaultsource.CreateVaultSource("nsscache_test", file.Name())
+	src, err := vault.CreateSource("nsscache_test", file.Name())
 	if err != nil {
 		return err
 	}
