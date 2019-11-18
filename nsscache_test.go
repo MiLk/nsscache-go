@@ -115,8 +115,13 @@ func Getent(dir string, args ...string) ([]byte, error) {
 	cmdArgs := []string{
 		"run", "--rm",
 		"-v", fmt.Sprintf("%s:%s:ro", filepath.Join(dir, "passwd.cache"), "/etc/passwd.cache"),
+		"-v", fmt.Sprintf("%s:%s:ro", filepath.Join(dir, "passwd.cache.ixname"), "/etc/passwd.cache.ixname"),
+		"-v", fmt.Sprintf("%s:%s:ro", filepath.Join(dir, "passwd.cache.ixuid"), "/etc/passwd.cache.ixuid"),
 		"-v", fmt.Sprintf("%s:%s:ro", filepath.Join(dir, "shadow.cache"), "/etc/shadow.cache"),
+		"-v", fmt.Sprintf("%s:%s:ro", filepath.Join(dir, "shadow.cache.ixname"), "/etc/shadow.cache.ixname"),
 		"-v", fmt.Sprintf("%s:%s:ro", filepath.Join(dir, "group.cache"), "/etc/group.cache"),
+		"-v", fmt.Sprintf("%s:%s:ro", filepath.Join(dir, "group.cache.ixname"), "/etc/group.cache.ixname"),
+		"-v", fmt.Sprintf("%s:%s:ro", filepath.Join(dir, "group.cache.ixgid"), "/etc/group.cache.ixgid"),
 		"nsscache-go",
 		"getent",
 	}
