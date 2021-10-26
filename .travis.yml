@@ -1,18 +1,23 @@
 ---
 language: go
 
+dist: bionic
+
 go:
-  - "1.15.x"
-  - "1.16.x"
+  - "1.17.x"
   - "1.x"
 
 install:
   - pushd docker && docker build -t nsscache-go:latest . && popd
   - go get github.com/mattn/goveralls
-  - go mod vendor
+  - go get
 
 after_success:
   - $GOPATH/bin/goveralls -service=travis-ci
 
 env:
   - GO111MODULE=on
+
+branches:
+  only:
+    - master
