@@ -4,7 +4,7 @@ language: go
 dist: bionic
 
 go:
-  - "1.17.x"
+  - "1.19.x"
   - "1.x"
 
 install:
