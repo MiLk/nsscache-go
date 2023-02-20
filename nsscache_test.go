@@ -3,7 +3,6 @@ package nsscache
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -130,7 +129,12 @@ func Getent(dir string, args ...string) ([]byte, error) {
 }
 
 func TestCacheMap_WriteFiles(t *testing.T) {
-	dir, err := ioutil.TempDir("/tmp", "nsscache-go-")
+	// On non-linux platforms, the permissions are wrong due to how docker share the volume
+	if runtime.GOOS != "linux" {
+		return
+	}
+
+	dir, err := os.MkdirTemp(os.TempDir(), "nsscache-go-")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 
@@ -150,13 +154,10 @@ func TestCacheMap_WriteFiles(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "bar:x:1001:1000:Mrs Bar:/home/bar:/bin/bash\n", string(res))
 
-	// On non-linux platforms, the permissions are wrong due to how docker share the volume
-	if runtime.GOOS == "linux" {
-		res, err = Getent(dir, "shadow", "foo")
-		lstchg := int32(time.Since(time.Unix(0, 0)).Hours() / 24)
-		assert.Nil(t, err)
-		assert.Equal(t, fmt.Sprintf("foo:!!:%d::::::\n", lstchg), string(res))
-	}
+	res, err = Getent(dir, "shadow", "foo")
+	lstchg := int32(time.Since(time.Unix(0, 0)).Hours() / 24)
+	assert.Nil(t, err)
+	assert.Equal(t, fmt.Sprintf("foo:!!:%d::::::\n", lstchg), string(res))
 
 	res, err = Getent(dir, "group", "foo")
 	assert.Nil(t, err)
