@@ -1,2 +1,3 @@
+covprofile
 examples/*/*.cache*
 vendor/
